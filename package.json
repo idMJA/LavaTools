@@ -1,15 +1,37 @@
 {
-  "name": "app",
+  "name": "lavatools",
   "version": "1.0.50",
+  "type": "module",
+  "description": "A collection of tools for LavaLink",
+  "main": "src/index.ts",
+  "author": "Kiyomi Fujiwara <kiyomi@mjba.my>",
+  "license": "MIT",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "bun run --watch src/index.ts"
+    "start": "bun run src/index.ts",
+    "dev": "bun run --watch src/index.ts",
+    "format": "biome format --write ./src"
   },
+  "lint-staged": {
+		"*.ts": [
+			"bun format"
+		]
+	},
   "dependencies": {
-    "elysia": "latest"
+    "@elysiajs/openapi": "^1.4.11",
+    "astring": "^1.9.0",
+    "axios": "^1.12.2",
+    "elysia": "^1.4.9",
+    "meriyah": "^6.1.4",
+    "playwright": "^1.55.1",
+    "totp-generator": "^2.0.0"
   },
   "devDependencies": {
-    "bun-types": "latest"
+    "@biomejs/biome": "^2.2.5",
+    "@types/bun": "latest",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.3"
   },
-  "module": "src/index.js"
+  "peerDependencies": {
+    "typescript": "^5"
+  }
 }

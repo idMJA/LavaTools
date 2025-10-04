@@ -1,7 +1,37 @@
-import { Elysia } from "elysia";
+import { logs, initializeSpotifyClient } from "#kiyomi/utils";
+import { Configuration } from "#kiyomi/config";
+import type { SpotifyClient } from "#kiyomi/types";
+import { startServer } from "./server";
 
-const app = new Elysia().get("/", () => "Hello Elysia").listen(3000);
+let spotifyClient: SpotifyClient | null = null;
 
-console.log(
-  `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
-);
+async function main() {
+	try {
+		spotifyClient = await initializeSpotifyClient(Configuration);
+	} catch (error) {
+		logs("error", "Application startup failed:", error);
+		process.exit(1);
+	}
+
+	await startServer(spotifyClient);
+
+	async function shutdown() {
+		logs("info", "Shutting down server...");
+
+		try {
+			if (spotifyClient?.cleanup) {
+				await spotifyClient.cleanup();
+				logs("info", "Spotify client cleaned up successfully");
+			}
+		} catch (error) {
+			logs("error", "Error during cleanup:", error);
+		}
+
+		process.exit(0);
+	}
+
+	process.on("SIGINT", shutdown);
+	process.on("SIGTERM", shutdown);
+}
+
+void main();
