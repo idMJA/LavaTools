@@ -12,15 +12,16 @@
     "format": "biome format --write ./src"
   },
   "lint-staged": {
-		"*.ts": [
-			"bun format"
-		]
-	},
+    "*.ts": [
+      "bun format"
+    ]
+  },
   "dependencies": {
     "@elysiajs/openapi": "^1.4.11",
     "astring": "^1.9.0",
     "axios": "^1.12.2",
     "elysia": "^1.4.9",
+    "lru-cache": "^11.2.2",
     "meriyah": "^6.1.4",
     "playwright": "^1.55.1",
     "totp-generator": "^2.0.0"

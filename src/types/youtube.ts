@@ -24,6 +24,18 @@ export interface StsResponse {
 	sts: string;
 }
 
+export interface ResolveUrlRequest {
+	stream_url: string;
+	player_url: string;
+	encrypted_signature?: string;
+	signature_key?: string;
+	n_param?: string;
+}
+
+export interface ResolveUrlResponse {
+	resolved_url: string;
+}
+
 export type DeepPartial<T> = T extends object
 	? Or<{
 			[P in keyof T]?: DeepPartial<T[P]>;

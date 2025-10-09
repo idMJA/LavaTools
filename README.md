@@ -94,6 +94,7 @@ Once the server is running, access the interactive API documentation:
 |--------|----------|-------------|---------------|
 | `POST` | `/api/youtube/decrypt_signature` | Decrypt YouTube signatures | ✅ |
 | `POST` | `/api/youtube/get_sts` | Extract signature timestamp | ✅ |
+| `POST` | `/api/youtube/resolve_url` | Resolve YouTube stream URL by decrypting signature and/or n parameter | ✅ |
 
 **Authentication:**
 YouTube endpoints require an `Authorization` header with your configured token (no "Bearer" prefix).
@@ -119,6 +120,25 @@ curl -X POST http://localhost:3000/api/youtube/get_sts \
   -H "Authorization: your_secret_token" \
   -d '{
     "player_url": "https://www.youtube.com/s/player/player_id/player.js"
+  }'
+```
+
+#### Resolve URL
+
+This endpoint decrypts `s`/`sig` and `n` query parameters on a stream URL using the provided player script URL (or the provided encrypted signature) and returns a resolved URL ready to be used by your client.
+
+Example:
+
+```bash
+curl -X POST http://localhost:3000/api/youtube/resolve_url \
+  -H "Content-Type: application/json" \
+  -H "Authorization: your_secret_token" \
+  -d '{
+    "stream_url": "https://rX---sn-abcxyz.googlevideo.com/videoplayback?expire=...&s=ENCRYPTED_S&n=ENCRYPTED_N",
+    "player_url": "https://www.youtube.com/s/player/player_id/player.js",
+    "encrypted_signature": "ENCRYPTED_S",
+    "signature_key": "sig",    # optional, defaults to 'sig'
+    "n_param": "ENCRYPTED_N"   # optional; if not provided, the endpoint will look for `n` in stream_url
   }'
 ```
 

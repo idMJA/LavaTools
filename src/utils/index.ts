@@ -5,14 +5,16 @@ export * from "./spotify";
 
 // youtube
 export * from "./youtube/decrypt";
+export * from "./youtube/resolve";
 export * from "./youtube/sts";
-export * from "./youtube/solver";
-export * from "./youtube/ast-utils";
-export * from "./youtube/setup";
-export * from "./youtube/sig";
-export * from "./youtube/n";
+export * from "./youtube/solvers/solver";
+export * from "./youtube/solvers/ast-utils";
+export * from "./youtube/solvers/setup";
+export * from "./youtube/solvers/sig";
+export * from "./youtube/solvers/n";
 
 // others
+export * from "./cache";
 export * from "./logger";
 export * from "./semaphore";
 export * from "./api";

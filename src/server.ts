@@ -5,12 +5,14 @@ import {
 	parseCookies,
 	isForceEnabled,
 	decryptSignature,
+	resolveUrl,
 	getSts,
 	checkYouTubeAuth,
 } from "#kiyomi/utils";
 import type {
 	SpotifyClient,
 	SignatureRequest,
+	ResolveUrlRequest,
 	StsRequest,
 } from "#kiyomi/types";
 import { Configuration } from "#kiyomi/config";
@@ -170,6 +172,89 @@ function createApp(spotifyClient: SpotifyClient | null) {
 					summary: "Decrypt YouTube Signature",
 					description:
 						"Decrypts YouTube encrypted signatures and n parameters using the player URL",
+					tags: ["YouTube"],
+					security: [
+						{
+							Authorization: [],
+						},
+					],
+				},
+			},
+		)
+		.post(
+			"/api/youtube/resolve_url",
+			async ({ body, headers, set }) => {
+				try {
+					if (!checkYouTubeAuth(headers)) {
+						set.status = 401;
+						return {
+							error: "Unauthorized. Valid Authorization header required.",
+						};
+					}
+
+					const request = body as ResolveUrlRequest;
+
+					if (!request.stream_url) {
+						return { error: "stream_url is required" };
+					}
+
+					if (!request.player_url) {
+						return { error: "player_url is required" };
+					}
+
+					const result = await resolveUrl(request);
+					return result;
+				} catch (e) {
+					logs("error", "YouTube URL resolution failed:", e);
+					return { error: (e as Error).message };
+				}
+			},
+			{
+				body: t.Object({
+					stream_url: t.String({
+						description: "YouTube stream URL to resolve",
+					}),
+					player_url: t.String({
+						description: "YouTube player URL containing decryption functions",
+					}),
+					encrypted_signature: t.Optional(
+						t.String({
+							description: "Encrypted YouTube signature to decrypt",
+						}),
+					),
+					signature_key: t.Optional(
+						t.String({
+							description: "Signature key parameter name (defaults to 'sig')",
+						}),
+					),
+					n_param: t.Optional(
+						t.String({
+							description: "YouTube n parameter to decrypt",
+						}),
+					),
+				}),
+				headers: t.Object({
+					authorization: t.String({
+						description: "Authorization token (without Bearer prefix)",
+					}),
+				}),
+				response: {
+					200: t.Object({
+						resolved_url: t.String({
+							description: "Resolved YouTube stream URL",
+						}),
+					}),
+					401: t.Object({
+						error: t.String(),
+					}),
+					400: t.Object({
+						error: t.String(),
+					}),
+				},
+				detail: {
+					summary: "Resolve YouTube Stream URL",
+					description:
+						"Resolves YouTube stream URLs by decrypting signatures and n parameters",
 					tags: ["YouTube"],
 					security: [
 						{

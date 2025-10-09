@@ -1,9 +1,70 @@
+import axios from "axios";
 import { generate } from "astring";
 import { parse, type ESTree } from "meriyah";
 import type { SolverFunctions } from "#kiyomi/types";
-import { setupNodes, extractSig, extractN } from "#kiyomi/utils";
+import {
+	setupNodes,
+	extractSig,
+	extractN,
+	playerCache,
+	preprocessedCache,
+	solverCache,
+	inFlightCache,
+} from "#kiyomi/utils";
 
-export function preprocessPlayer(data: string): string {
+async function fetchPlayerFile(playerUrl: string): Promise<string> {
+	const key = playerUrl.trim();
+
+	const cached = playerCache.get(key);
+	if (cached !== undefined) return cached;
+
+	const ongoing = inFlightCache.get(key);
+	if (ongoing) return ongoing;
+
+	const p = (async () => {
+		try {
+			const response = await axios.get(key, { responseType: "text" });
+			const playerContent = response.data as string;
+			playerCache.set(key, playerContent);
+			return playerContent;
+		} catch (error) {
+			throw new Error(
+				`Error fetching player file: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		} finally {
+			inFlightCache.delete(key);
+		}
+	})();
+
+	inFlightCache.set(key, p as Promise<string>);
+	return p;
+}
+
+export async function getSolvers(
+	playerUrl: string,
+): Promise<SolverFunctions | null> {
+	const key = playerUrl.trim();
+
+	const cached = solverCache.get(key);
+	if (cached) return cached;
+
+	let preprocessedPlayer = preprocessedCache.get(key);
+	if (!preprocessedPlayer) {
+		try {
+			const rawPlayer = await fetchPlayerFile(key);
+			preprocessedPlayer = preprocessPlayer(rawPlayer);
+			preprocessedCache.set(key, preprocessedPlayer);
+		} catch {
+			return null;
+		}
+	}
+
+	const solvers = getFromPrepared(preprocessedPlayer);
+	solverCache.set(key, solvers);
+	return solvers;
+}
+
+function preprocessPlayer(data: string): string {
 	const ast = parse(data);
 	const body = ast.body;
 
@@ -29,7 +90,7 @@ export function preprocessPlayer(data: string): string {
 					func.expression.callee.type === "FunctionExpression"
 				) {
 					const block = func.expression.callee.body;
-					// Skip `var window = this;`
+
 					block.body.splice(0, 1);
 					return block;
 				}
@@ -100,7 +161,7 @@ export function preprocessPlayer(data: string): string {
 	return generate(ast);
 }
 
-export function getFromPrepared(code: string): SolverFunctions {
+function getFromPrepared(code: string): SolverFunctions {
 	const resultObj = { n: null, sig: null };
 	Function("_result", code)(resultObj);
 	return resultObj;
