@@ -34,9 +34,23 @@ class DirectSpotifyClient implements SpotifyClient {
 	}
 }
 
-async function checkBrowserAvailability(): Promise<boolean> {
+async function checkBrowserAvailability(
+	executablePath?: string,
+): Promise<boolean> {
 	try {
-		const browser = await playwright.chromium.launch({ headless: true });
+		const launchOptions: Parameters<typeof playwright.chromium.launch>[0] = {
+			headless: true,
+		};
+
+		if (executablePath && executablePath.trim() !== "") {
+			launchOptions.executablePath = executablePath;
+			logs(
+				"info",
+				`Browser availability check using custom path: ${executablePath}`,
+			);
+		}
+
+		const browser = await playwright.chromium.launch(launchOptions);
 		await browser.close();
 		return true;
 	} catch (error) {
@@ -51,7 +65,9 @@ export async function createSpotifyClient(
 	const method = config.spotify.fetchMethod;
 
 	if (method === "browser") {
-		const browserAvailable = await checkBrowserAvailability();
+		const browserAvailable = await checkBrowserAvailability(
+			config.browserPath || undefined,
+		);
 
 		if (!browserAvailable) {
 			logs(
