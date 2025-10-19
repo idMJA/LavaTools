@@ -11,7 +11,11 @@ async function fetchPlayerFile(playerUrl: string): Promise<string> {
 	}
 
 	try {
-		const response = await axios.get(playerUrl, { responseType: "text" });
+		const fullUrl = playerUrl.startsWith("http")
+			? playerUrl
+			: `https://www.youtube.com${playerUrl}`;
+
+		const response = await axios.get(fullUrl, { responseType: "text" });
 		const playerContent = response.data;
 		playerCache.set(playerUrl, playerContent);
 		return playerContent;
