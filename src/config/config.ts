@@ -15,10 +15,12 @@ export const Configuration: KiyomiConfiguration = {
 	},
 
 	spotify: {
-		fetchMethod: "api", // "api" | "browser"
+		fetchMethod: "browser", // "browser" | "api"
 	},
 
 	youtube: {
 		auth: "TsukasaAlyaMahiru", // Set your auth password here
 	},
 };
+
+export * from "./key";

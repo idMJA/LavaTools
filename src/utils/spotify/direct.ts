@@ -1,3 +1,7 @@
+// WARNING!
+// This code atm not works properly due to the repository it fetches the secrets from
+// has been removed. Please do not use this method until the issue is resolved.
+
 import axios from "axios";
 import { TOTP } from "totp-generator";
 import type { SpotifyToken } from "#kiyomi/types";

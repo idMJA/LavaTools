@@ -19,3 +19,4 @@ export * from "./logger";
 export * from "./semaphore";
 export * from "./api";
 export * from "./auth";
+export * from "./rotator";

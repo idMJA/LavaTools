@@ -29,7 +29,7 @@
     "paths": {
       "#kiyomi/utils": ["./src/utils/index.ts"],
       "#kiyomi/types": ["./src/types/index.ts"],
-      "#kiyomi/config": ["./src/config.ts"]
+      "#kiyomi/config": ["./src/config/config.ts"]
     }
   }
 }

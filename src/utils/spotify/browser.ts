@@ -169,7 +169,10 @@ export class SpotifyTokenHandler {
 						"--window-size=1920,1080",
 					],
 				};
-				if (executablePath) launchOptions.executablePath = executablePath;
+				if (executablePath) {
+					launchOptions.executablePath = executablePath;
+					logs("info", `Using custom browser path: ${executablePath}`);
+				}
 
 				this.browser = await playwright.chromium.launch(launchOptions);
 				this.context = await this.browser.newContext({
