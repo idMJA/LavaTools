@@ -35,6 +35,32 @@ cd LavaTools
 bun install
 ```
 
+## Chromium Installation
+
+### For most environments (not Pterodactyl):
+Install Playwright's bundled Chromium automatically:
+
+```bash
+bunx playwright install chromium
+```
+
+### For Pterodactyl (or restricted environments):
+1. **Download Chromium**
+   - Download a compatible Chromium build from [https://commondatastorage.googleapis.com/chromium-browser-snapshots/index.html](https://commondatastorage.googleapis.com/chromium-browser-snapshots/index.html) (choose your OS/arch, e.g. Linux x64).
+2. **Extract the archive** and upload the `chrome`/`chromium` binary (and its folder) to your Pterodactyl server, e.g. `/home/container/chrome-linux/chrome`.
+3. **Set the path in `.env`**:
+   ```properties
+   CHROME_PATH=/home/container/chrome-linux/chrome
+   ```
+4. **Restart your server/container**.
+
+If `CHROME_PATH` is not set, Playwright will use its default browser (if installed).
+
+## Build & Run
+
+```bash
+npm start
+```
 ### Configuration
 
 Update the configuration in `src/config.ts`:

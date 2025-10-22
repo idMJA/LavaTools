@@ -86,6 +86,10 @@ export async function createSpotifyClient(
 	}
 
 	if (method === "api") {
+		logs(
+			"warn",
+			"API method - WARNING: Not working properly due to removed repository dependency. Please use browser method instead.",
+		);
 		logs("info", "Using direct API Spotify token fetching");
 		return new DirectSpotifyClient();
 	}
