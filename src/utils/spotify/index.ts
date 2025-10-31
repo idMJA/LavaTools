@@ -38,6 +38,7 @@ async function checkBrowserAvailability(
 	executablePath?: string,
 ): Promise<boolean> {
 	try {
+		logs("info", "Checking browser availability...");
 		const launchOptions: Parameters<typeof playwright.chromium.launch>[0] = {
 			headless: true,
 		};
@@ -48,13 +49,22 @@ async function checkBrowserAvailability(
 				"info",
 				`Browser availability check using custom path: ${executablePath}`,
 			);
+		} else {
+			logs("info", "Checking default Playwright Chromium installation");
 		}
 
+		logs("info", "Attempting to launch browser for availability check...");
 		const browser = await playwright.chromium.launch(launchOptions);
+		logs("info", "Browser launched successfully for availability check");
 		await browser.close();
+		logs("info", "Browser availability check passed");
 		return true;
 	} catch (error) {
-		logs("warn", "Browser availability check failed:", error);
+		logs("error", "Browser availability check failed:", error);
+		logs("error", `Error details: ${error instanceof Error ? error.message : String(error)}`);
+		if (error instanceof Error && error.message.includes("Executable doesn't exist")) {
+			logs("error", "Chromium browser is not installed. Run: bunx playwright install chromium");
+		}
 		return false;
 	}
 }

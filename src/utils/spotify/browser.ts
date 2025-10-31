@@ -21,9 +21,11 @@ export class SpotifyTokenHandler {
 	private routesInitialized = false;
 
 	constructor() {
+		logs("info", "Initializing SpotifyTokenHandler with browser method...");
 		const initStart = Date.now();
 		const bootstrap = async (attempt = 1): Promise<void> => {
 			try {
+				logs("info", `Attempting to fetch initial Spotify token (attempt ${attempt})...`);
 				await this.getAccessToken();
 				logs(
 					"info",
@@ -35,8 +37,12 @@ export class SpotifyTokenHandler {
 					`Failed to fetch initial Spotify token (attempt ${attempt})`,
 					err,
 				);
-				if (attempt < 3)
+				if (attempt < 3) {
+					logs("info", `Retrying in ${2000 * attempt}ms...`);
 					setTimeout(() => void bootstrap(attempt + 1), 2000 * attempt);
+				} else {
+					logs("error", "Failed to fetch initial Spotify token after 3 attempts");
+				}
 			}
 		};
 		void bootstrap();
@@ -149,6 +155,7 @@ export class SpotifyTokenHandler {
 	}> {
 		if (!this.browser || !this.context) {
 			try {
+				logs("info", "Launching browser...");
 				const executablePath =
 					Configuration.browserPath && Configuration.browserPath.trim() !== ""
 						? Configuration.browserPath
@@ -172,15 +179,24 @@ export class SpotifyTokenHandler {
 				if (executablePath) {
 					launchOptions.executablePath = executablePath;
 					logs("info", `Using custom browser path: ${executablePath}`);
+				} else {
+					logs("info", "Using default Playwright Chromium installation");
 				}
 
+				logs("info", "Attempting to launch Chromium browser...");
 				this.browser = await playwright.chromium.launch(launchOptions);
+				logs("info", "Browser launched successfully");
+				
+				logs("info", "Creating browser context...");
 				this.context = await this.browser.newContext({
 					userAgent:
 						"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
 				});
+				logs("info", "Browser context created successfully");
 
+				logs("info", "Creating new page...");
 				this.page = await this.context.newPage();
+				logs("info", "Navigating to Spotify...");
 				void this.page.goto("https://open.spotify.com/");
 				this.routesInitialized = false;
 				logs("info", "Persistent page created and navigated to Spotify");
@@ -189,6 +205,8 @@ export class SpotifyTokenHandler {
 				this.context = undefined;
 				this.page = undefined;
 				logs("error", "Failed to launch browser or context", err);
+				logs("error", `Error details: ${err instanceof Error ? err.message : String(err)}`);
+				logs("error", `Error stack: ${err instanceof Error ? err.stack : 'No stack trace'}`);
 				throw err;
 			}
 		} else {
