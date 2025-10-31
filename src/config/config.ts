@@ -15,7 +15,7 @@ export const Configuration: KiyomiConfiguration = {
 	},
 
 	spotify: {
-		fetchMethod: "api", // "browser" | "api"
+		fetchMethod: "browser", // "browser" | "api"
 	},
 
 	youtube: {
