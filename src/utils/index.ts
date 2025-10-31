@@ -7,11 +7,7 @@ export * from "./spotify";
 export * from "./youtube/decrypt";
 export * from "./youtube/resolve";
 export * from "./youtube/sts";
-export * from "./youtube/solvers/solver";
-export * from "./youtube/solvers/ast-utils";
-export * from "./youtube/solvers/setup";
-export * from "./youtube/solvers/sig";
-export * from "./youtube/solvers/n";
+export * from "./youtube/solvers";
 
 // others
 export * from "./cache";
