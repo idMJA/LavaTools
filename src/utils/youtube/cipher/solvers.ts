@@ -1,4 +1,4 @@
-import axios from "axios";
+import ky from "ky";
 import { getFromPrepared, preprocessPlayer } from "#kiyomi/ejs/solvers";
 import type { Solvers } from "#kiyomi/types";
 import {
@@ -35,10 +35,7 @@ export async function fetchPlayerFile(playerUrl: string): Promise<string> {
 
 	const fetchPromise = (async () => {
 		try {
-			const response = await axios.get(normalizedPlayerUrl, {
-				responseType: "text",
-			});
-			const playerContent = response.data;
+			const playerContent = await ky.get(normalizedPlayerUrl).text();
 			playerCache.set(normalizedPlayerUrl, playerContent);
 			return playerContent;
 		} catch (error) {

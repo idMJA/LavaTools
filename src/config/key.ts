@@ -25,20 +25,26 @@ export const KeyRotationConfiguration: KeyRotationConfig = {
 		// 	password: "PASSWORD3",
 		// },
 	],
-	keys: [
-		// Add your Spotify keys here
-		// Example:
-		// {
-		// 	clientId: "your_client_id_1",
-		// 	clientSecret: "your_client_secret_1",
-		// 	spDc: "your_sp_dc_1",
-		// },
-		// {
-		// 	clientId: "your_client_id_2",
-		// 	clientSecret: "your_client_secret_2",
-		// 	spDc: "your_sp_dc_2",
-		// },
-	],
+	keys: {
+		spotify: [
+			// Add your Spotify keys here
+			// Example:
+			// {
+			// 	clientId: "your_client_id_1",     // Required: for spsearch
+			// 	clientSecret: "your_client_secret_1", // Required: for spsearch
+			// 	spDc: "your_sp_dc_1",             // Optional: for accessing spotify lyrics api
+			// },
+		],
+		deezer: [
+			// Add your Deezer keys here
+			// Example:
+			// {
+			// 	arl: "your_deezer_arl_cookie_1",                    // Required: Deezer ARL cookie
+			// 	masterDecryptionKey: "your_master_decryption_key",  // Optional: Master decryption key
+			// 	formats: ["FLAC", "MP3_320", "MP3_256", "MP3_128"], // Optional: Preferred audio formats
+			// },
+		],
+	},
 	rotationInterval: 60, // Rotate every 60 minutes
 	maxErrors: 3, // Rotate after 3 errors
 	autoRotate: true, // Enable automatic rotation

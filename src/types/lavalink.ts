@@ -1,11 +1,18 @@
 export interface LavalinkSpotifyConfig {
 	clientId: string;
 	clientSecret: string;
-	spDc: string;
+	spDc?: string;
+}
+
+export interface LavalinkDeezerConfig {
+	masterDecryptionKey?: string;
+	arl: string;
+	formats?: string[];
 }
 
 export interface LavalinkConfig {
-	spotify: LavalinkSpotifyConfig;
+	spotify?: LavalinkSpotifyConfig;
+	deezer?: LavalinkDeezerConfig;
 }
 
 export interface LavalinkServerConfig {
@@ -36,7 +43,16 @@ export interface LavalinkServerConfig {
 export interface SpotifyKeySet {
 	clientId: string;
 	clientSecret: string;
-	spDc: string;
+	spDc?: string;
+	isActive?: boolean;
+	lastUsed?: Date;
+	errors?: number;
+}
+
+export interface DeezerKeySet {
+	masterDecryptionKey?: string;
+	arl: string;
+	formats?: string[];
 	isActive?: boolean;
 	lastUsed?: Date;
 	errors?: number;
@@ -44,12 +60,15 @@ export interface SpotifyKeySet {
 
 export interface KeyRotationConfig {
 	/**
-	 * Array of Lavalink servers to update with rotated Spotify keys.
+	 * Array of Lavalink servers to update with rotated keys.
 	 * The key rotation will update all servers in the list.
 	 * Supports multiple Lavalink instances for load balancing or redundancy.
 	 */
 	lavalinkServers: LavalinkServerConfig[];
-	keys: SpotifyKeySet[];
+	keys: {
+		spotify?: SpotifyKeySet[];
+		deezer?: DeezerKeySet[];
+	};
 	rotationInterval?: number; // in minutes, default 60
 	maxErrors?: number; // max errors before rotating, default 3
 	autoRotate?: boolean; // default true

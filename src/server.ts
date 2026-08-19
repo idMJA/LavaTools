@@ -592,6 +592,108 @@ function createApp(spotifyClient: SpotifyClient | null) {
 				},
 			},
 		)
+		.post(
+			"/api/youtube/generate",
+			async ({ headers, body, set }) => {
+				if (!checkYouTubeAuth(headers)) {
+					set.status = 401;
+					return { error: "Unauthorized" };
+				}
+
+				try {
+					const { createColdStartToken, fetch_pot, getVisitorData } =
+						await import("#kiyomi/utils");
+					const reqBody = (body || {}) as {
+						content_binding?: string;
+						coldToken?: boolean;
+					};
+
+					const contentBinding =
+						reqBody.content_binding ||
+						(await getVisitorData(6 * 60 * 60 * 1000));
+					const result = await fetch_pot(contentBinding);
+
+					const response: Record<string, string | null> = {
+						poToken: result.poToken,
+						contentBinding: result.contentBinding,
+					};
+
+					if (reqBody.coldToken) {
+						response.coldStartToken =
+							createColdStartToken(result.contentBinding) || null;
+					}
+
+					return response;
+				} catch (e: unknown) {
+					logs("error", "WebPO POT generation failed:", e);
+					set.status = 500;
+					return { error: (e as Error).message || "generation failed" };
+				}
+			},
+			{
+				body: t.Object({
+					content_binding: t.Optional(t.String()),
+					coldToken: t.Optional(t.Boolean()),
+				}),
+				headers: t.Object({
+					authorization: t.Optional(
+						t.String({
+							description:
+								"Optional authorization token matching youtube.auth in config (required if youtube.auth is set)",
+						}),
+					),
+				}),
+				detail: {
+					summary: "Generate WebPO PO Token",
+					description:
+						"Generates a YouTube PO Token for a videoId or visitorData binding (WebPO Generator & Lavalink remotePot compatible)",
+					tags: ["YouTube"],
+				},
+			},
+		)
+		.post(
+			"/api/youtube/decode_cold_start",
+			async ({ headers, body, set }) => {
+				if (!checkYouTubeAuth(headers)) {
+					set.status = 401;
+					return { error: "Unauthorized" };
+				}
+
+				try {
+					const { decodeColdStartToken } = await import("#kiyomi/utils");
+					const { token } = body as { token: string };
+
+					if (!token) {
+						set.status = 400;
+						return { error: "token is required" };
+					}
+
+					return decodeColdStartToken(token);
+				} catch (e: unknown) {
+					set.status = 400;
+					return { error: (e as Error).message || "invalid cold-start token" };
+				}
+			},
+			{
+				body: t.Object({
+					token: t.String(),
+				}),
+				headers: t.Object({
+					authorization: t.Optional(
+						t.String({
+							description:
+								"Optional authorization token matching youtube.auth in config (required if youtube.auth is set)",
+						}),
+					),
+				}),
+				detail: {
+					summary: "Decode Cold Start Token",
+					description:
+						"Decodes a WebPO cold start token to inspect timestamp and client state",
+					tags: ["YouTube"],
+				},
+			},
+		)
 		.listen(Configuration.server.port || 3000);
 }
 

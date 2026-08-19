@@ -14,16 +14,29 @@ async function main() {
 	try {
 		spotifyClient = await initializeSpotifyClient(Configuration);
 
-		if (KeyRotationConfiguration.keys.length > 0) {
+		const hasSpotifyKeys =
+			(KeyRotationConfiguration.keys.spotify?.length ?? 0) > 0;
+		const hasDeezerKeys =
+			(KeyRotationConfiguration.keys.deezer?.length ?? 0) > 0;
+
+		if (hasSpotifyKeys || hasDeezerKeys) {
 			initializeKeyRotator(KeyRotationConfiguration);
-			logs(
-				"info",
-				`Key rotator initialized with ${KeyRotationConfiguration.keys.length} keys`,
-			);
+			if (hasSpotifyKeys) {
+				logs(
+					"info",
+					`Spotify key rotator initialized with ${KeyRotationConfiguration.keys.spotify?.length} keys`,
+				);
+			}
+			if (hasDeezerKeys) {
+				logs(
+					"info",
+					`Deezer key rotator initialized with ${KeyRotationConfiguration.keys.deezer?.length} keys`,
+				);
+			}
 		} else {
 			logs(
 				"warn",
-				"No Spotify keys configured for rotation. Add keys to KeyRotationConfiguration in config.ts",
+				"No Spotify or Deezer keys configured for rotation. Add keys to KeyRotationConfiguration in config.ts",
 			);
 		}
 	} catch (error) {

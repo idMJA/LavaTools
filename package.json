@@ -1,6 +1,6 @@
 {
   "name": "lavatools",
-  "version": "1.0.60",
+  "version": "1.0.70",
   "type": "module",
   "description": "A collection of tools for LavaLink",
   "main": "src/index.ts",
@@ -9,6 +9,7 @@
   "scripts": {
     "start": "bun run src/index.ts",
     "dev": "bun run --watch src/index.ts",
+    "lint": "biome check ./src",
     "test": "bun test",
     "typecheck:app": "tsc -p tsconfig.app.json --noEmit",
     "format": "biome check --write ./src && biome format --write ./src",
@@ -22,8 +23,9 @@
   "dependencies": {
     "@elysiajs/openapi": "^1.4.11",
     "astring": "^1.9.0",
-    "axios": "^1.12.2",
     "elysia": "^1.4.9",
+    "jsdom": "^30.0.1",
+    "ky": "^2.0.2",
     "lru-cache": "^11.2.2",
     "meriyah": "^6.1.4",
     "playwright": "^1.55.1",
@@ -32,6 +34,7 @@
   "devDependencies": {
     "@biomejs/biome": "^2.2.5",
     "@types/bun": "latest",
+    "@types/jsdom": "^30.0.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.3"
   },

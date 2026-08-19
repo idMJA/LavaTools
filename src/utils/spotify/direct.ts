@@ -1,4 +1,4 @@
-import axios from "axios";
+import ky from "ky";
 import { TOTP } from "totp-generator";
 import type { SpotifyToken } from "#kiyomi/types";
 
@@ -52,16 +52,18 @@ export async function generateTokenUrl(
 	cookieHeader?: string,
 	fetchResponse = false,
 ): Promise<string | SpotifyToken | null> {
-	const secret = await axios.get(
-		"https://raw.githubusercontent.com/idMJA/secretify/refs/heads/master/secrets/secretDict.json",
-		cookieHeader ? { headers: { Cookie: cookieHeader } } : undefined,
-	);
-	const secretsMap = secret.data;
+	const secretsMap = await ky
+		.get(
+			"https://raw.githubusercontent.com/idMJA/secretify/refs/heads/master/secrets/secretDict.json",
+			cookieHeader ? { headers: { Cookie: cookieHeader } } : undefined,
+		)
+		.json<Record<string, number[]>>();
 	const keys = Object.keys(secretsMap);
 	const totpVer = keys.length > 0 ? keys.slice(-1)[0] : undefined;
 
 	if (!totpVer) return null;
 	const totpSecretBytes = secretsMap[totpVer];
+	if (!totpSecretBytes) return null;
 	const totpSecretKey = generateSecret(totpSecretBytes);
 
 	const { otp } = await TOTP.generate(totpSecretKey);
@@ -69,12 +71,14 @@ export async function generateTokenUrl(
 
 	if (!fetchResponse) return tokenURL;
 
-	const response = await axios.get(
-		tokenURL,
-		cookieHeader ? { headers: { Cookie: cookieHeader } } : undefined,
-	);
+	const responseData = await ky
+		.get(
+			tokenURL,
+			cookieHeader ? { headers: { Cookie: cookieHeader } } : undefined,
+		)
+		.json<Record<string, unknown>>();
 
-	const record = { ...(response?.data ?? {}) } as Record<string, unknown>;
+	const record = { ...(responseData ?? {}) };
 
 	delete record._notes;
 	return record as SpotifyToken;

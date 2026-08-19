@@ -9,9 +9,10 @@
 ## ✨ Features
 
 - 🔐 **YouTube Signature Decryption** - Decrypt YouTube signatures and n-parameters
+- 🛡️ **BotGuard WebPO PO Token Solver** - Native Proof of Origin Token (PO Token / POT) generator for YouTube & Lavalink (`remotePot`)
 - 🕐 **STS Extraction** - Extract signature timestamps from YouTube player scripts
 - 🎵 **Spotify Token Management** - Get Spotify access tokens via API or browser automation
-- 🔄 **Spotify Key Rotation** - Automatic Spotify credential rotation with **multiple Lavalink server support**
+- 🔄 **Spotify & Deezer Key Rotation** - Automatic credential rotation with **multiple Lavalink server support** (`spotify` & `deezer`)
 - 📡 **Parallel Server Updates** - Update all Lavalink instances simultaneously
 - 📖 **OpenAPI Documentation** - Interactive API documentation with Swagger UI
 - 🔒 **Authentication** - Secure YouTube endpoints with token-based auth
@@ -182,7 +183,7 @@ Once the server is running, access the interactive API documentation:
 
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| `GET` | `/api/key-rotation/status` | Get key rotation status and all configured servers | ❌ |
+| `GET`  | `/api/key-rotation/status` | Get key rotation status and all configured servers | ❌ |
 | `POST` | `/api/key-rotation/rotate` | Manually rotate to next key (updates all servers) | ✅ |
 | `POST` | `/api/key-rotation/set-active` | Set specific key as active (updates all servers) | ✅ |
 | `POST` | `/api/key-rotation/report-error` | Report error for current key | ✅ |
@@ -197,21 +198,42 @@ Once the server is running, access the interactive API documentation:
 | `POST` | `/api/youtube/decrypt_signature` | Decrypt YouTube signatures | ✅ |
 | `POST` | `/api/youtube/get_sts` | Extract signature timestamp | ✅ |
 | `POST` | `/api/youtube/resolve_url` | Resolve YouTube stream URL by decrypting signature and/or n parameter | ✅ |
+| `POST` | `/api/youtube/generate` | Generate BotGuard PO Token (`content_binding` & optional `coldToken`) | 🔑 (If configured) |
+| `POST` | `/api/youtube/decode_cold_start` | Decode cold start token to inspect timestamp and client state | 🔑 (If configured) |
 
 **Authentication:**
-YouTube endpoints require an `Authorization` header with your configured token (no "Bearer" prefix).
+YouTube endpoints enforce authentication if `youtube.auth` token is configured in your LavaTools configuration. Include the `Authorization` header with your token (or `pass` parameter in Lavalink `youtube.remotePot.pass`).
 
-#### Decrypt Signature
+#### Lavalink Configuration Example
+
+Attach this config in your Lavalink `application.yml` under the `youtube` plugin configuration:
+
+```yaml
+plugins:
+  youtube:
+    remotePot:
+      url: "http://localhost:3000/api/youtube"
+      pass: "your_secret_token" # Required if youtube.auth is configured in LavaTools
+```
+
+#### Generate BotGuard PO Token
 
 ```bash
-curl -X POST http://localhost:3000/api/youtube/decrypt_signature \
+curl -X POST http://localhost:3000/api/youtube/generate \
   -H "Content-Type: application/json" \
   -H "Authorization: your_secret_token" \
   -d '{
-    "encrypted_signature": "encrypted_sig_here",
-    "n_param": "n_param_here",
-    "player_url": "https://www.youtube.com/s/player/player_id/player.js"
+    "content_binding": "dQw4w9WgXcQ",
+    "coldToken": false
   }'
+```
+
+Response:
+```json
+{
+  "poToken": "...",
+  "contentBinding": "dQw4w9WgXcQ"
+}
 ```
 
 #### Get STS
@@ -244,13 +266,14 @@ curl -X POST http://localhost:3000/api/youtube/resolve_url \
   }'
 ```
 
-## 🔄 Spotify Key Rotation
+## 🔄 Spotify & Deezer Key Rotation
 
-LavaTools includes an advanced Spotify key rotation system that automatically updates multiple Lavalink servers with fresh credentials.
+LavaTools includes an advanced Spotify and Deezer key rotation system that automatically updates multiple Lavalink servers with fresh credentials.
 
 ### Features
 
 - ✅ **Multiple Lavalink Support** - Update multiple Lavalink servers simultaneously
+- ✅ **Spotify & Deezer Support** - Rotate Spotify keys (`clientId`, `clientSecret`, `spDc`) and Deezer keys (`arl`, `masterDecryptionKey`, `formats`)
 - ✅ **Automatic Rotation** - Rotate keys at specified intervals
 - ✅ **Error Handling** - Automatically rotate keys when errors are detected
 - ✅ **Parallel Updates** - Update all servers concurrently for fast synchronization
@@ -279,21 +302,25 @@ lavalinkServers: [
 ]
 ```
 
-2. Add your Spotify credentials:
+2. Add your Spotify and Deezer credentials:
 
 ```typescript
-keys: [
-  {
-    clientId: "client_id_1",
-    clientSecret: "client_secret_1",
-    spDc: "sp_dc_1",
-  },
-  {
-    clientId: "client_id_2",
-    clientSecret: "client_secret_2",
-    spDc: "sp_dc_2",
-  },
-]
+keys: {
+  spotify: [
+    {
+      clientId: "client_id_1",
+      clientSecret: "client_secret_1",
+      spDc: "sp_dc_1",
+    },
+  ],
+  deezer: [
+    {
+      arl: "deezer_arl_cookie_1",
+      masterDecryptionKey: "master_decryption_key_1",
+      formats: ["FLAC", "MP3_320"],
+    },
+  ],
+}
 ```
 
 3. The system will automatically:
@@ -352,22 +379,28 @@ curl -X POST http://localhost:3000/api/key-rotation/report-error \
 
 ```
 src/
-├── config.ts              # Application configuration
-├── index.ts              # Application entry point
-├── server.ts             # Elysia server setup
-├── routes/               # API route handlers
-├── types/                # TypeScript type definitions
-└── utils/                # Utility functions
-    ├── spotify/          # Spotify-related utilities
-    │   ├── browser.ts    # Browser automation for tokens
-    │   ├── direct.ts     # API-based token fetching
-    │   └── index.ts      # Spotify client factory
-    └── youtube/          # YouTube-related utilities
-        ├── decrypt.ts    # Signature decryption logic
-        ├── sts.ts        # STS extraction logic
-        ├── solver.ts     # Main solver functions
-        ├── auth.ts       # Authentication middleware
-        └── types.ts      # YouTube-specific types
+├── config/                # Application & Key Rotation configuration
+├── index.ts               # Application entry point
+├── server.ts              # Elysia server setup
+├── types/                 # TypeScript type definitions
+└── utils/                 # Utility functions
+    ├── rotator.ts         # Key rotator (Spotify & Deezer)
+    ├── spotify/           # Spotify-related utilities
+    │   ├── browser.ts     # Browser automation for tokens
+    │   ├── direct.ts      # API-based token fetching
+    │   └── index.ts       # Spotify client factory
+    └── youtube/           # YouTube-related utilities
+        ├── botguard/      # BotGuard PO Token solver (WebPO Generator)
+        │   ├── constants.ts
+        │   ├── helpers.ts
+        │   ├── solver.ts
+        │   └── visitor.ts
+        ├── cipher/        # YouTube signature & player deciphering
+        │   ├── decrypt.ts
+        │   ├── player.ts
+        │   ├── resolve.ts
+        │   └── solvers.ts
+        └── index.ts
 ```
 
 ## 🛠️ Development
@@ -382,25 +415,26 @@ bun run dev
 bun run format
 
 # Type checking
-bun run --check src/index.ts
+bun run typecheck:app
+
+# Run unit tests
+bun test
 ```
-
-### Adding New Features
-
-1. Create new utility functions in `src/utils/`
-2. Define types in `src/types/`
-3. Add routes in `src/server.ts` with OpenAPI documentation
-4. Update configuration if needed
 
 ## 🙏 Credits & Acknowledgments
 
 This project builds upon the excellent work of several open-source projects:
 
-### YouTube Cipher Implementation
-- **[yt-cipher](https://github.com/kikkia/yt-cipher)** - Original Deno implementation of YouTube signature decryption
-- **[ejs](https://github.com/yt-dlp/ejs)** - Core JavaScript implementation for YouTube signature solving
+### YouTube BotGuard / WebPO Implementation
+- **[ashton045/webpo-generator](https://github.com/ashton045/webpo-generator)** - Original implementation of remote HTTP service for generating PO Tokens by solving BotGuard challenges
+- **[LuanRT/BgUtils](https://github.com/LuanRT/BgUtils)** - Core BotGuard attestation solver & research
+- **[Deivu](https://github.com/Deivu)** - Contributions to BotGuard sources & research
 
-### Spotify Integration  
+### YouTube Cipher Implementation
+- **[kikkia/yt-cipher](https://github.com/kikkia/yt-cipher)** - Original Deno implementation of YouTube signature decryption
+- **[yt-dlp/ejs](https://github.com/yt-dlp/ejs)** - Core JavaScript implementation for YouTube signature solving
+
+### Spotify & Deezer Integration  
 - **[accessify](https://github.com/idMJA/accessify)** - Original browser-based Spotify token implementation
 - **[spotify-secrets](https://github.com/Thereallo1026/spotify-secrets)** - Spotify API secrets for direct token access
 

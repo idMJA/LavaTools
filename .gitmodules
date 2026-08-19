@@ -1,4 +1,4 @@
 [submodule "ejs"]
 	path = ejs
-	url = https://github.com/kikkia/ejs.git
+	url = https://github.com/yt-dlp/ejs.git
 	branch = main

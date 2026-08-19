@@ -4,10 +4,14 @@ export enum PlayerVariant {
 	IAS_TCE = "IAS_TCE",
 	ES5 = "ES5",
 	ES6 = "ES6",
+	ES6_TCC = "ES6_TCC",
+	ES6_TCE = "ES6_TCE",
 	TV = "TV",
 	TV_ES6 = "TV_ES6",
 	PHONE = "PHONE",
 	EMBED = "EMBED",
+	EMBED_ES6 = "EMBED_ES6",
+	HOUSE = "HOUSE",
 }
 
 class VariantDetail {
@@ -58,6 +62,16 @@ const playerVariantDetails: VariantDetail[] = [
 		(region) => `player_es6.vflset/${region}/base.js`,
 	),
 	new VariantDetail(
+		PlayerVariant.ES6_TCC,
+		/^player_es6_tcc\.vflset\/([a-zA-Z_]+)\/base\.js$/,
+		(region) => `player_es6_tcc.vflset/${region}/base.js`,
+	),
+	new VariantDetail(
+		PlayerVariant.ES6_TCE,
+		/^player_es6_tce\.vflset\/([a-zA-Z_]+)\/base\.js$/,
+		(region) => `player_es6_tce.vflset/${region}/base.js`,
+	),
+	new VariantDetail(
 		PlayerVariant.PHONE,
 		/^player-plasma-ias-phone-([a-zA-Z_]+)\.vflset\/base\.js$/,
 		(region) => `player-plasma-ias-phone-${region}.vflset/base.js`,
@@ -76,6 +90,16 @@ const playerVariantDetails: VariantDetail[] = [
 		PlayerVariant.EMBED,
 		/^player_embed\.vflset\/([a-zA-Z_]+)\/base\.js$/,
 		(region) => `player_ias.vflset/${region}/base.js`,
+	),
+	new VariantDetail(
+		PlayerVariant.EMBED_ES6,
+		/^player_embed_es6\.vflset\/([a-zA-Z_]+)\/base\.js$/,
+		(region) => `player_es6.vflset/${region}/base.js`,
+	),
+	new VariantDetail(
+		PlayerVariant.HOUSE,
+		/^house_brand_player\.vflset\/([a-zA-Z_]+)\/base\.js$/,
+		(region) => `house_brand_player.vflset/${region}/base.js`,
 	),
 ];
 
@@ -116,7 +140,10 @@ export class PlayerScript {
 			}
 		}
 
-		throw new Error(`Unknown player variant for URL: ${url}`);
+		console.warn(
+			`Unknown player variant for URL: ${url}. Defaulting to IAS variant.`,
+		);
+		return new PlayerScript(id, PlayerVariant.IAS, null);
 	}
 
 	toUrl(): string {

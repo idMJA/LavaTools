@@ -78,13 +78,13 @@ describe("PlayerScript", () => {
 		expect(script.variant).toBe(PlayerVariant.ES5);
 	});
 
-	it("throws for unknown variant URL", async () => {
-		const { PlayerScript } = await import("./player");
+	it("defaults to IAS for unknown variant URL", async () => {
+		const { PlayerScript, PlayerVariant } = await import("./player");
 
-		expect(() =>
-			PlayerScript.fromUrl(
-				`https://www.youtube.com/s/player/${TEST_PLAYER_ID}/unknown-player-path/base.js`,
-			),
-		).toThrow("Unknown player variant");
+		const script = PlayerScript.fromUrl(
+			`https://www.youtube.com/s/player/${TEST_PLAYER_ID}/unknown-player-path/base.js`,
+		);
+
+		expect(script.variant).toBe(PlayerVariant.IAS);
 	});
 });
