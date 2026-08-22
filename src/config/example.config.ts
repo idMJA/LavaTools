@@ -1,3 +1,4 @@
+// RENAME MEEE TO config.ts
 import type { KiyomiConfiguration } from "#kiyomi/types";
 
 export const Configuration: KiyomiConfiguration = {

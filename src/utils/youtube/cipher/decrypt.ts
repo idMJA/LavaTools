@@ -1,5 +1,5 @@
 import type { SignatureRequest, SignatureResponse } from "#kiyomi/types";
-import { getSolvers } from "#kiyomi/utils";
+import { getSolvers, logs } from "#kiyomi/utils";
 
 export async function decryptSignature(
 	request: SignatureRequest,
@@ -21,6 +21,8 @@ export async function decryptSignature(
 	if (n_param && solvers.n) {
 		decrypted_n_sig = solvers.n(n_param);
 	}
+
+	logs("info", `Decrypted signature/n-param via player: ${player_url}`);
 
 	return {
 		decrypted_signature,

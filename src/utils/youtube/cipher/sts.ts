@@ -1,5 +1,10 @@
 import type { StsRequest, StsResponse } from "#kiyomi/types";
-import { fetchPlayerFile, getPlayerScript, stsCache } from "#kiyomi/utils";
+import {
+	fetchPlayerFile,
+	getPlayerScript,
+	logs,
+	stsCache,
+} from "#kiyomi/utils";
 
 function normalizePlayerUrl(playerUrl: string): string {
 	try {
@@ -20,6 +25,10 @@ export async function getSts(
 
 	const cachedSts = stsCache.get(cacheKey);
 	if (cachedSts) {
+		logs(
+			"info",
+			`Extracted STS (${cachedSts}) from cache for player: ${player_url}`,
+		);
 		return { sts: cachedSts, cacheHit: true };
 	}
 
@@ -31,6 +40,7 @@ export async function getSts(
 	if (match?.[2]) {
 		const sts = match[2];
 		stsCache.set(cacheKey, sts);
+		logs("info", `Extracted STS (${sts}) from player script: ${player_url}`);
 		return { sts, cacheHit: false };
 	} else {
 		throw new Error("Timestamp not found in player script");

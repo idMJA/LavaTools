@@ -623,9 +623,14 @@ function createApp(spotifyClient: SpotifyClient | null) {
 							createColdStartToken(result.contentBinding) || null;
 					}
 
+					logs(
+						"info",
+						`Generated PO Token for binding: ${result.contentBinding}`,
+					);
+
 					return response;
 				} catch (e: unknown) {
-					logs("error", "WebPO POT generation failed:", e);
+					logs("error", "PO Token generation failed:", e);
 					set.status = 500;
 					return { error: (e as Error).message || "generation failed" };
 				}
@@ -668,7 +673,9 @@ function createApp(spotifyClient: SpotifyClient | null) {
 						return { error: "token is required" };
 					}
 
-					return decodeColdStartToken(token);
+					const decoded = decodeColdStartToken(token);
+					logs("info", "Successfully decoded cold start token");
+					return decoded;
 				} catch (e: unknown) {
 					set.status = 400;
 					return { error: (e as Error).message || "invalid cold-start token" };

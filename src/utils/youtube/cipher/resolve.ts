@@ -1,5 +1,5 @@
 import type { ResolveUrlRequest, ResolveUrlResponse } from "#kiyomi/types";
-import { getSolvers } from "#kiyomi/utils";
+import { getSolvers, logs } from "#kiyomi/utils";
 
 export async function resolveUrl(
 	request: ResolveUrlRequest,
@@ -39,6 +39,8 @@ export async function resolveUrl(
 		const decryptedN = solvers.n(nParam);
 		url.searchParams.set("n", decryptedN);
 	}
+
+	logs("info", `Resolved YouTube stream URL via player: ${player_url}`);
 
 	const response: ResolveUrlResponse = {
 		resolved_url: url.toString(),
