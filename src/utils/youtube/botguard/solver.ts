@@ -1,4 +1,4 @@
-import { JSDOM } from "jsdom";
+import { JSDOM, VirtualConsole } from "jsdom";
 import {
 	COLD_START_MAX_BINDING_BYTES,
 	INNERTUBE_API_KEY,
@@ -350,9 +350,21 @@ export async function getWebPo(useYouTubeAPI = true): Promise<Minter> {
 	let runtime_dom: JSDOM | undefined;
 
 	minter_promise = (async () => {
+		const virtualConsole = new VirtualConsole();
+		virtualConsole.on("jsdomError", (error: Error) => {
+			if (error.message.includes("HTMLCanvasElement")) return;
+			console.error(error);
+		});
+
 		const dom = new JSDOM("<!DOCTYPE html><html><body></body></html>", {
 			url: YT_BASE,
+			virtualConsole,
 		});
+
+		if (dom.window.HTMLCanvasElement) {
+			dom.window.HTMLCanvasElement.prototype.getContext = (() =>
+				null) as unknown as typeof dom.window.HTMLCanvasElement.prototype.getContext;
+		}
 
 		runtime_dom = dom;
 		const glob = globalThis as unknown as Record<string, unknown>;
