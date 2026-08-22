@@ -3,7 +3,7 @@ import {
 	GOOGLE_API_BASE,
 	REG_FOR_BASE64,
 	YT_BASE,
-} from "./constants";
+} from "#kiyomi/utils";
 
 export function base64ToUint8(base64: string): Uint8Array {
 	const base64Mod = base64.replace(

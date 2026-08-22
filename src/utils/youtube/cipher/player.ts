@@ -1,3 +1,5 @@
+import { logs } from "#kiyomi/utils";
+
 export enum PlayerVariant {
 	IAS = "IAS",
 	IAS_TCC = "IAS_TCC",
@@ -103,9 +105,6 @@ const playerVariantDetails: VariantDetail[] = [
 	),
 ];
 
-const overridePlayerId = process.env.OVERRIDE_PLAYER_ID;
-const overridePlayerVariant = process.env.OVERRIDE_PLAYER_VARIANT;
-
 export class PlayerScript {
 	constructor(
 		public readonly id: string,
@@ -140,7 +139,8 @@ export class PlayerScript {
 			}
 		}
 
-		console.warn(
+		logs(
+			"warn",
 			`Unknown player variant for URL: ${url}. Defaulting to IAS variant.`,
 		);
 		return new PlayerScript(id, PlayerVariant.IAS, null);
@@ -169,6 +169,9 @@ export class PlayerScript {
 
 export function getPlayerScript(playerUrl: string): PlayerScript {
 	let script = PlayerScript.fromUrl(playerUrl);
+
+	const overridePlayerId = process.env.OVERRIDE_PLAYER_ID;
+	const overridePlayerVariant = process.env.OVERRIDE_PLAYER_VARIANT;
 
 	if (overridePlayerId) {
 		script = script.withId(overridePlayerId);

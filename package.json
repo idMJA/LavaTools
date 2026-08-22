@@ -10,7 +10,7 @@
     "start": "bun run src/index.ts",
     "dev": "bun run --watch src/index.ts",
     "lint": "biome check ./src",
-    "test": "bun test",
+    "test": "bun test --path-ignore-patterns=**/ejs/**",
     "typecheck:app": "tsc -p tsconfig.app.json --noEmit",
     "format": "biome check --write ./src && biome format --write ./src",
     "sub:update": "git submodule update --init --remote --recursive"

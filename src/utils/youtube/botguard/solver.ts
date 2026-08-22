@@ -1,16 +1,19 @@
 import { JSDOM, VirtualConsole } from "jsdom";
 import {
+	base64ToUint8,
+	buildURL,
 	COLD_START_MAX_BINDING_BYTES,
 	INNERTUBE_API_KEY,
+	parse_json,
 	REQUEST_KEY,
 	TV_CONFIG,
 	TV_USER_AGENT,
+	Uint8ToBase64,
 	USER_AGENT,
 	WEB_CLIENT_NAME,
 	WEB_CLIENT_VERSION,
 	YT_BASE,
-} from "./constants";
-import { base64ToUint8, buildURL, parse_json, Uint8ToBase64 } from "./helpers";
+} from "#kiyomi/utils";
 
 interface BotGuardOptions {
 	program: string;

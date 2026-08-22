@@ -5,7 +5,7 @@ import {
 	WEB_CLIENT_NAME,
 	WEB_CLIENT_VERSION,
 	YT_BASE,
-} from "./constants";
+} from "#kiyomi/utils";
 
 let visitorData: string | undefined;
 let visitor_expires = 0;

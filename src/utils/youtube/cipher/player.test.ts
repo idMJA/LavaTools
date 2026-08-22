@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "bun:test";
+import { getPlayerScript, PlayerScript, PlayerVariant } from "#kiyomi/utils";
 
-const TEST_PLAYER_ID = "44899b31";
+const TEST_PLAYER_ID = "2574220e";
 
 describe("PlayerScript", () => {
 	afterEach(() => {
@@ -8,9 +9,7 @@ describe("PlayerScript", () => {
 		delete process.env.OVERRIDE_PLAYER_VARIANT;
 	});
 
-	it("parses IAS player URL", async () => {
-		const { PlayerScript, PlayerVariant } = await import("./player");
-
+	it("parses IAS player URL", () => {
 		const script = PlayerScript.fromUrl(
 			`https://www.youtube.com/s/player/${TEST_PLAYER_ID}/player_ias.vflset/en_US/base.js`,
 		);
@@ -23,9 +22,7 @@ describe("PlayerScript", () => {
 		);
 	});
 
-	it("parses PHONE variant", async () => {
-		const { PlayerScript, PlayerVariant } = await import("./player");
-
+	it("parses PHONE variant", () => {
 		const script = PlayerScript.fromUrl(
 			`https://www.youtube.com/s/player/${TEST_PLAYER_ID}/player-plasma-ias-phone-en_US.vflset/base.js`,
 		);
@@ -37,9 +34,7 @@ describe("PlayerScript", () => {
 		);
 	});
 
-	it("parses region-less TV variant", async () => {
-		const { PlayerScript, PlayerVariant } = await import("./player");
-
+	it("parses region-less TV variant", () => {
 		const script = PlayerScript.fromUrl(
 			`https://www.youtube.com/s/player/${TEST_PLAYER_ID}/tv-player-ias.vflset/tv-player-ias.js`,
 		);
@@ -51,9 +46,7 @@ describe("PlayerScript", () => {
 		);
 	});
 
-	it("parses relative player URL path", async () => {
-		const { PlayerScript, PlayerVariant } = await import("./player");
-
+	it("parses relative player URL path", () => {
 		const script = PlayerScript.fromUrl(
 			`/s/player/${TEST_PLAYER_ID}/player_es6.vflset/id_ID/base.js`,
 		);
@@ -62,13 +55,9 @@ describe("PlayerScript", () => {
 		expect(script.region).toBe("id_ID");
 	});
 
-	it("applies env overrides in getPlayerScript", async () => {
+	it("applies env overrides in getPlayerScript", () => {
 		process.env.OVERRIDE_PLAYER_ID = "wxyz5678";
 		process.env.OVERRIDE_PLAYER_VARIANT = "ES5";
-
-		const { getPlayerScript, PlayerVariant } = await import(
-			`./player?override-${Date.now()}`
-		);
 
 		const script = getPlayerScript(
 			`https://www.youtube.com/s/player/${TEST_PLAYER_ID}/player_ias.vflset/en_US/base.js`,
@@ -78,9 +67,7 @@ describe("PlayerScript", () => {
 		expect(script.variant).toBe(PlayerVariant.ES5);
 	});
 
-	it("defaults to IAS for unknown variant URL", async () => {
-		const { PlayerScript, PlayerVariant } = await import("./player");
-
+	it("defaults to IAS for unknown variant URL", () => {
 		const script = PlayerScript.fromUrl(
 			`https://www.youtube.com/s/player/${TEST_PLAYER_ID}/unknown-player-path/base.js`,
 		);

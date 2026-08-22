@@ -4,7 +4,7 @@ import {
 	createColdStartToken,
 	decodeColdStartToken,
 	Uint8ToBase64,
-} from "./index";
+} from "#kiyomi/utils";
 
 describe("BotGuard / WebPO helper functions", () => {
 	it("converts Uint8Array to Base64 and back", () => {
