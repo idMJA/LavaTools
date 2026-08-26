@@ -60,29 +60,6 @@ function release_dom(dom: JSDOM | undefined) {
 	dom.window.close();
 }
 
-let innertube_api_key = INNERTUBE_API_KEY;
-let innertube_api_key_expires = 0;
-
-async function get_innertube_api_key(): Promise<string> {
-	if (innertube_api_key_expires > Date.now()) return innertube_api_key;
-
-	try {
-		const res = await fetch(`${YT_BASE}/sw.js`, {
-			headers: { accept: "*/*", "user-agent": USER_AGENT },
-			signal: AbortSignal.timeout(10000),
-		});
-		const txt = await res.text();
-		const key = txt.match(/AIza[0-9A-Za-z_-]{20,}/)?.[0];
-
-		if (key) innertube_api_key = key;
-	} catch {
-		innertube_api_key = INNERTUBE_API_KEY;
-	}
-
-	innertube_api_key_expires = Date.now() + 60 * 60 * 1000;
-	return innertube_api_key;
-}
-
 function parse_waa_challenge(raw_data: unknown): unknown {
 	const rawArr = raw_data as Record<string, unknown>[];
 	if (rawArr?.[0]?.bgChallenge) return rawArr[0];
@@ -160,7 +137,7 @@ export async function create_bg(
 		) => Promise<[(args: unknown[]) => unknown]>;
 	};
 
-	if (!vm || !vm.a) throw new Error("BotGuard VM unavailable");
+	if (!vm?.a) throw new Error("BotGuard VM unavailable");
 
 	type VMFunctions = {
 		async_snapshot: (cb: (res: unknown) => void, args: unknown[]) => void;
@@ -380,7 +357,6 @@ export async function getWebPo(useYouTubeAPI = true): Promise<Minter> {
 
 		let key = REQUEST_KEY;
 		let challenge: Record<string, unknown> | undefined;
-		const api_key = await get_innertube_api_key();
 
 		try {
 			const res = await fetch(YT_BASE, {
@@ -445,7 +421,7 @@ export async function getWebPo(useYouTubeAPI = true): Promise<Minter> {
 				method: "POST",
 				headers: {
 					"content-type": "application/json+protobuf",
-					"x-goog-api-key": api_key,
+					"x-goog-api-key": INNERTUBE_API_KEY,
 					"x-user-agent": "grpc-web-javascript/0.1",
 					"user-agent": USER_AGENT,
 				},
@@ -473,7 +449,7 @@ export async function getWebPo(useYouTubeAPI = true): Promise<Minter> {
 						accept: "*/*",
 						"content-type": "application/json",
 						"user-agent": USER_AGENT,
-						"x-goog-api-key": api_key,
+						"x-goog-api-key": INNERTUBE_API_KEY,
 					},
 					body: JSON.stringify({
 						context: {
@@ -537,14 +513,11 @@ export async function getWebPo(useYouTubeAPI = true): Promise<Minter> {
 				"content-type": "application/json+protobuf",
 				"x-goog-api-key": request_key,
 				"x-user-agent": "grpc-web-javascript/0.1",
-				"user-agent": USER_AGENT,
 			},
 			body: JSON.stringify([key, res]),
 		});
 
-		let t_txt = await fetch(endpoint, generate_options(api_key));
-		if (!t_txt.ok && api_key !== INNERTUBE_API_KEY)
-			t_txt = await fetch(endpoint, generate_options(INNERTUBE_API_KEY));
+		const t_txt = await fetch(endpoint, generate_options(INNERTUBE_API_KEY));
 
 		if (!t_txt.ok) throw new Error(`GenerateIT returned ${t_txt.status}`);
 

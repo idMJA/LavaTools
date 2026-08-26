@@ -1,5 +1,5 @@
 import ky from "ky";
-import { getFromPrepared, preprocessPlayer } from "#kiyomi/ejs/solvers";
+import { getFromPrepared, preprocessPlayer } from "#kiyomi/ejs";
 import type { Solvers } from "#kiyomi/types";
 import {
 	getPlayerScript,

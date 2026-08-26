@@ -30,7 +30,7 @@
       "#kiyomi/utils": ["./src/utils/index.ts"],
       "#kiyomi/types": ["./src/types/index.ts"],
       "#kiyomi/config": ["./src/config/config.ts"],
-      "#kiyomi/ejs/*": ["./ejs/src/yt/solver/*"]
+      "#kiyomi/ejs": ["./src/utils/youtube/cipher/ejs/index.ts"]
     }
   }
 }
