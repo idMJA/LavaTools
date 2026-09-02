@@ -357,6 +357,7 @@ export async function getWebPo(useYouTubeAPI = true): Promise<Minter> {
 
 		let key = REQUEST_KEY;
 		let challenge: Record<string, unknown> | undefined;
+		let eacrToken: string | undefined;
 
 		try {
 			const res = await fetch(YT_BASE, {
@@ -368,24 +369,104 @@ export async function getWebPo(useYouTubeAPI = true): Promise<Minter> {
 			});
 
 			const txt = await res.text();
-			const config = txt.match(/ytcfg\.set\(({.+?})\);/s)?.[1];
 
-			if (config) {
-				const win = dom.window as unknown as Record<string, unknown>;
-				win.yt = {
-					config_: JSON.parse(config),
-				};
-				glob.yt = win.yt;
+			const win = dom.window as unknown as {
+				yt?: { config_?: Record<string, unknown> };
+			};
+			win.yt = win.yt || { config_: {} };
+			win.yt.config_ = win.yt.config_ || {};
+
+			const cfg = txt.matchAll(/ytcfg\.set\(({.+?})\);/gs);
+			for (const match of cfg) {
+				if (match[1]) {
+					try {
+						Object.assign(win.yt.config_, JSON.parse(match[1]));
+					} catch {
+						try {
+							Object.assign(
+								win.yt.config_,
+								parse_json(match[1]) as Record<string, unknown>,
+							);
+						} catch {}
+					}
+				}
 			}
 
+			const reg_match = txt.matchAll(
+				/ytcfg\.set\(["']([A-Za-z0-9_]+)["']\s*,\s*(["'].*?["']|true|false|\d+|{[^}]+}|\[[^\]]+\])\);/gs,
+			);
+			for (const match of reg_match) {
+				if (match[1] && match[2]) {
+					try {
+						win.yt.config_[match[1]] = JSON.parse(match[2]);
+					} catch {
+						win.yt.config_[match[1]] = match[2].replace(/^["']|["']$/g, "");
+					}
+				}
+			}
+
+			if (!win.yt.config_.EVENT_ID) {
+				const rand_bytes = new Uint8Array(16);
+				crypto.getRandomValues(rand_bytes);
+				win.yt.config_.EVENT_ID = Uint8ToBase64(rand_bytes, true).replace(
+					/=+$/,
+					"",
+				);
+			}
+
+			glob.yt = win.yt;
+
 			const attestation = txt.match(/window\.ytAtN\(\s*({[\s\S]*?})\s*\)/);
-			challenge = attestation?.[1]
-				? ((parse_json(attestation[1]) as Record<string, unknown>)?.R as Record<
-						string,
-						unknown
-					>)
-				: undefined;
+			if (attestation?.[1]) {
+				try {
+					const parsed = parse_json(attestation[1]) as {
+						R?: Record<string, unknown>;
+						T?: string;
+					};
+					challenge = (
+						parsed.R?.bgChallenge ? parsed.R : parse_waa_challenge(parsed.R)
+					) as Record<string, unknown> | undefined;
+					eacrToken = parsed.T;
+				} catch {
+					challenge = undefined;
+				}
+			}
+
+			if (!challenge?.bgChallenge && !eacrToken) {
+				const initialAttestationMatch = txt.match(
+					/initialAttestationDataJson\s*=\s*({[\s\S]*?});/,
+				);
+				if (initialAttestationMatch?.[1]) {
+					try {
+						const parsed = parse_json(initialAttestationMatch[1]) as {
+							R?: Record<string, unknown>;
+							T?: string;
+						};
+						challenge = (
+							parsed.R?.bgChallenge ? parsed.R : parse_waa_challenge(parsed.R)
+						) as Record<string, unknown> | undefined;
+						eacrToken = parsed.T || eacrToken;
+					} catch {}
+				}
+			}
 		} catch {}
+
+		const win = dom.window as unknown as {
+			yt?: { config_?: Record<string, unknown> };
+		};
+		if (!win.yt?.config_?.EVENT_ID) {
+			win.yt = win.yt || {};
+			win.yt.config_ = win.yt.config_ || {};
+			if (!win.yt.config_.EVENT_ID) {
+				const rand_bytes = new Uint8Array(16);
+				crypto.getRandomValues(rand_bytes);
+				win.yt.config_.EVENT_ID = Uint8ToBase64(rand_bytes, true).replace(
+					/=+$/,
+					"",
+				);
+			}
+			glob.yt = win.yt;
+		}
 
 		if (
 			!challenge ||
@@ -393,20 +474,40 @@ export async function getWebPo(useYouTubeAPI = true): Promise<Minter> {
 			!("bgChallenge" in challenge)
 		) {
 			try {
-				const res = await fetch(TV_CONFIG, {
-					headers: { accept: "*/*", "user-agent": TV_USER_AGENT },
-				});
-				const txt = await res.text();
+				const payload: Record<string, unknown> = {
+					context: {
+						client: {
+							clientName: WEB_CLIENT_NAME,
+							clientVersion: WEB_CLIENT_VERSION,
+						},
+					},
+					engagementType: "ENGAGEMENT_TYPE_UNBOUND",
+				};
 
-				if (!txt.startsWith(")]}'"))
-					throw new Error("invalid yt tv config response");
+				if (eacrToken) payload.eacrToken = eacrToken;
 
-				const json = JSON.parse(txt.slice(4));
+				const att_res = await fetch(
+					`${YT_BASE}/youtubei/v1/att/get?prettyPrint=false`,
+					{
+						method: "POST",
+						headers: {
+							accept: "*/*",
+							"content-type": "application/json",
+							"user-agent": USER_AGENT,
+							"x-goog-api-key": INNERTUBE_API_KEY,
+						},
+						body: JSON.stringify(payload),
+					},
+				);
 
-				challenge = json.challengeParams?.R
-					? JSON.parse(json.challengeParams.R)
-					: undefined;
-				key = json.challengeRequestKey || key;
+				if (!att_res.ok) throw new Error(`att/get returned ${att_res.status}`);
+
+				const attestation = await att_res.json();
+
+				if (!attestation?.bgChallenge)
+					throw new Error("could not get challenge from att/get");
+
+				challenge = { bgChallenge: attestation.bgChallenge };
 			} catch {
 				challenge = undefined;
 			}
@@ -442,34 +543,20 @@ export async function getWebPo(useYouTubeAPI = true): Promise<Minter> {
 			!("bgChallenge" in challenge)
 		) {
 			try {
-				const att_url = `${YT_BASE}/youtubei/v1/att/get?prettyPrint=false`;
-				const att_res = await fetch(att_url, {
-					method: "POST",
-					headers: {
-						accept: "*/*",
-						"content-type": "application/json",
-						"user-agent": USER_AGENT,
-						"x-goog-api-key": INNERTUBE_API_KEY,
-					},
-					body: JSON.stringify({
-						context: {
-							client: {
-								clientName: WEB_CLIENT_NAME,
-								clientVersion: WEB_CLIENT_VERSION,
-							},
-						},
-						engagementType: "ENGAGEMENT_TYPE_UNBOUND",
-					}),
+				const res = await fetch(TV_CONFIG, {
+					headers: { accept: "*/*", "user-agent": TV_USER_AGENT },
 				});
+				const txt = await res.text();
 
-				if (!att_res.ok) throw new Error(`att/get returned ${att_res.status}`);
+				if (!txt.startsWith(")]}'"))
+					throw new Error("invalid yt tv config response");
 
-				const attestation = await att_res.json();
+				const json = JSON.parse(txt.slice(4));
 
-				if (!attestation?.bgChallenge)
-					throw new Error("could not get challenge from att/get");
-
-				challenge = { bgChallenge: attestation.bgChallenge };
+				challenge = json.challengeParams?.R
+					? JSON.parse(json.challengeParams.R)
+					: undefined;
+				key = json.challengeRequestKey || key;
 			} catch {
 				challenge = undefined;
 			}
@@ -513,6 +600,7 @@ export async function getWebPo(useYouTubeAPI = true): Promise<Minter> {
 				"content-type": "application/json+protobuf",
 				"x-goog-api-key": request_key,
 				"x-user-agent": "grpc-web-javascript/0.1",
+				"user-agent": USER_AGENT,
 			},
 			body: JSON.stringify([key, res]),
 		});
