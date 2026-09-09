@@ -1,3 +1,4 @@
+import { Configuration } from "#kiyomi/config";
 import { logs } from "#kiyomi/utils";
 
 export enum PlayerVariant {
@@ -170,8 +171,8 @@ export class PlayerScript {
 export function getPlayerScript(playerUrl: string): PlayerScript {
 	let script = PlayerScript.fromUrl(playerUrl);
 
-	const overridePlayerId = process.env.OVERRIDE_PLAYER_ID;
-	const overridePlayerVariant = process.env.OVERRIDE_PLAYER_VARIANT;
+	const overridePlayerId = Configuration.youtube?.overridePlayerId;
+	const overridePlayerVariant = Configuration.youtube?.overridePlayerVariant;
 
 	if (overridePlayerId) {
 		script = script.withId(overridePlayerId);

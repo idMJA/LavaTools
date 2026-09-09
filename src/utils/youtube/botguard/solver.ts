@@ -640,12 +640,15 @@ export async function getWebPo(useYouTubeAPI = true): Promise<Minter> {
 export async function fetch_pot(
 	contentBinding: string,
 	useYouTubeAPI = true,
-): Promise<{ poToken: string; contentBinding: string }> {
+): Promise<{ poToken: string; contentBinding: string; ttl: number }> {
 	const minter = await getWebPo(useYouTubeAPI);
+
+	const remainingTtl = Math.max(1, Math.floor((expires - Date.now()) / 1000));
 
 	return {
 		poToken: await minter.mintAsWebsafeString(contentBinding),
 		contentBinding,
+		ttl: remainingTtl,
 	};
 }
 

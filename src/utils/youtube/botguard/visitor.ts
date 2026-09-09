@@ -78,7 +78,10 @@ async function visitor_endpoint(timeout: number): Promise<string> {
 	return decodeURIComponent(result);
 }
 
-export function getVisitorData(ttl: number, timeout = 30000): Promise<string> {
+export function getVisitorData(
+	ttl = 10 * 60 * 1000,
+	timeout = 30000,
+): Promise<string> {
 	if (visitorData && visitor_expires > Date.now())
 		return Promise.resolve(visitorData);
 

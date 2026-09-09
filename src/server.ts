@@ -609,13 +609,13 @@ function createApp(spotifyClient: SpotifyClient | null) {
 					};
 
 					const contentBinding =
-						reqBody.content_binding ||
-						(await getVisitorData(6 * 60 * 60 * 1000));
+						reqBody.content_binding || (await getVisitorData());
 					const result = await fetch_pot(contentBinding);
 
-					const response: Record<string, string | null> = {
+					const response: Record<string, string | number | null> = {
 						poToken: result.poToken,
 						contentBinding: result.contentBinding,
+						ttl: result.ttl,
 					};
 
 					if (reqBody.coldToken) {

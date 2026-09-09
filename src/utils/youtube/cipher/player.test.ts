@@ -1,12 +1,23 @@
-import { afterEach, describe, expect, it } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { Configuration } from "#kiyomi/config";
 import { getPlayerScript, PlayerScript, PlayerVariant } from "#kiyomi/utils";
 
 const TEST_PLAYER_ID = "2574220e";
 
 describe("PlayerScript", () => {
+	let originalConfigVariant: string | null | undefined;
+	let originalConfigId: string | null | undefined;
+
+	beforeEach(() => {
+		originalConfigVariant = Configuration.youtube?.overridePlayerVariant;
+		originalConfigId = Configuration.youtube?.overridePlayerId;
+	});
+
 	afterEach(() => {
-		delete process.env.OVERRIDE_PLAYER_ID;
-		delete process.env.OVERRIDE_PLAYER_VARIANT;
+		if (Configuration.youtube) {
+			Configuration.youtube.overridePlayerVariant = originalConfigVariant;
+			Configuration.youtube.overridePlayerId = originalConfigId;
+		}
 	});
 
 	it("parses IAS player URL", () => {
@@ -55,11 +66,24 @@ describe("PlayerScript", () => {
 		expect(script.region).toBe("id_ID");
 	});
 
-	it("applies env overrides in getPlayerScript", () => {
-		process.env.OVERRIDE_PLAYER_ID = "wxyz5678";
-		process.env.OVERRIDE_PLAYER_VARIANT = "ES5";
+	it("applies config overrides in getPlayerScript", () => {
+		if (Configuration.youtube) {
+			Configuration.youtube.overridePlayerVariant = "TV";
+			Configuration.youtube.overridePlayerId = "aaaa1111";
+		}
 
-		const script = getPlayerScript(
+		let script = getPlayerScript(
+			`https://www.youtube.com/s/player/${TEST_PLAYER_ID}/player_ias.vflset/en_US/base.js`,
+		);
+		expect(script.id).toBe("aaaa1111");
+		expect(script.variant).toBe(PlayerVariant.TV);
+
+		if (Configuration.youtube) {
+			Configuration.youtube.overridePlayerVariant = "ES5";
+			Configuration.youtube.overridePlayerId = "wxyz5678";
+		}
+
+		script = getPlayerScript(
 			`https://www.youtube.com/s/player/${TEST_PLAYER_ID}/player_ias.vflset/en_US/base.js`,
 		);
 

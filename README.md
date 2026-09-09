@@ -88,6 +88,15 @@ export const Configuration: KiyomiConfiguration = {
 
 	youtube: {
 		auth: "your_secret_token", // Set your auth token here
+
+		// Forces all cipher requests to use a specific player variant.
+		// "IAS" is strongly recommended by yt-cipher for consistent decryption stability.
+		// Available: "IAS" | "IAS_TCC" | "IAS_TCE" | "ES5" | "ES6" | "TV" | "TV_ES6" | "PHONE" | "EMBED" | "EMBED_ES6" | "HOUSE" | null
+		overridePlayerVariant: "IAS",
+
+		// Forces all cipher requests to use a specific YouTube player script ID (e.g. "44899b31").
+		// Set to null to use whatever player ID is requested by Lavalink.
+		overridePlayerId: null,
 	},
 };
 

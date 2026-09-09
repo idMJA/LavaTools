@@ -26,4 +26,32 @@ describe("BotGuard / WebPO helper functions", () => {
 			expect(decoded.date).toBeInstanceOf(Date);
 		}
 	});
+
+	it("handles commas and quotes in parse_json", async () => {
+		const { parse_json } = await import("#kiyomi/utils");
+		const input = "{'a': 1, 'b': 2, }";
+		const parsed = parse_json(input);
+		expect(parsed).toEqual({ a: 1, b: 2 });
+	});
+
+	it("decodes hex escapes in parse_json", async () => {
+		const { parse_json } = await import("#kiyomi/utils");
+		const input =
+			'{"title": "Song \\x22Remix\\x22 by \\x41\\x42", "nested": "{\\"count\\": 42}"}';
+		const parsed = parse_json(input);
+		expect(parsed).toEqual({
+			title: 'Song "Remix" by AB',
+			nested: { count: 42 },
+		});
+	});
+
+	it("supports arrays and unquoted keys in parse_json", async () => {
+		const { parse_json } = await import("#kiyomi/utils");
+		const input = '{ unquoted: ["\\x31", "\\x32"], "name": "test", }';
+		const parsed = parse_json(input);
+		expect(parsed).toEqual({
+			unquoted: ["1", "2"],
+			name: "test",
+		});
+	});
 });
