@@ -243,10 +243,22 @@ export async function create_bg(
 	};
 }
 
+export interface IntegrityTokenData {
+	integrity_token?: string;
+	mint_refresh_threshold?: number;
+	mintRefreshThreshold?: number;
+	websafe_fallback_token?: string;
+	expiresAt?: number;
+}
+
 class Minter {
 	private callback: (data: Uint8Array) => Promise<Uint8Array>;
 	private client: BotGuardVMClient;
 	private dom: JSDOM;
+	public integrityTokenData?: IntegrityTokenData;
+	public expiresAt = 0;
+	public mintThreshold = 100;
+	public mintCount = 0;
 	private active = 0;
 	private retired = false;
 	private closed = false;
@@ -255,14 +267,26 @@ class Minter {
 		callback: (data: Uint8Array) => Promise<Uint8Array>,
 		client: BotGuardVMClient,
 		dom: JSDOM,
+		iTdata?: IntegrityTokenData,
 	) {
 		this.callback = callback;
 		this.client = client;
 		this.dom = dom;
+		this.integrityTokenData = iTdata;
+		this.expiresAt = iTdata?.expiresAt || 0;
+		const threshold = Number(
+			iTdata?.mint_refresh_threshold ?? iTdata?.mintRefreshThreshold,
+		);
+		this.mintThreshold =
+			Number.isFinite(threshold) && threshold > 0 ? threshold : 100;
+	}
+
+	isExhausted() {
+		return this.mintThreshold > 0 && this.mintCount >= this.mintThreshold;
 	}
 
 	static async create(
-		integrityToken: { integrity_token?: string },
+		integrityToken: IntegrityTokenData,
 		webPoSignalOutput: unknown[],
 		client: BotGuardVMClient,
 		dom: JSDOM,
@@ -283,7 +307,7 @@ class Minter {
 		if (!(callback instanceof Function))
 			throw new Error("WebPO minter unavailable");
 
-		return new Minter(callback, client, dom);
+		return new Minter(callback, client, dom, integrityToken);
 	}
 
 	retire() {
@@ -302,6 +326,7 @@ class Minter {
 
 	async mintAsWebsafeString(contentBinding: string): Promise<string> {
 		this.active++;
+		this.mintCount++;
 
 		try {
 			return Uint8ToBase64(
@@ -320,7 +345,14 @@ let expires = 0;
 let cur: Minter | undefined;
 
 export async function getWebPo(useYouTubeAPI = true): Promise<Minter> {
-	if (minter_promise && (expires === 0 || expires > Date.now()))
+	if (cur?.isExhausted()) {
+		cur.retire();
+		cur = undefined;
+		minter_promise = undefined;
+		expires = 0;
+	}
+
+	if (minter_promise && (expires === 0 || expires > Date.now() + 15000))
 		return minter_promise;
 
 	cur?.retire();
@@ -609,20 +641,32 @@ export async function getWebPo(useYouTubeAPI = true): Promise<Minter> {
 
 		if (!t_txt.ok) throw new Error(`GenerateIT returned ${t_txt.status}`);
 
-		const [integrity_token, estimated_ttl_secs] = await t_txt.json();
+		const [
+			integrity_token,
+			estimated_ttl_secs,
+			mint_refresh_threshold,
+			websafe_fallback_token,
+		] = await t_txt.json();
+		const ttl = Number(estimated_ttl_secs);
+
+		expires =
+			Date.now() +
+			Math.max(1, (Number.isFinite(ttl) && ttl > 0 ? ttl : 300) - 30) * 1000;
+
 		const minter = await Minter.create(
-			{ integrity_token },
+			{
+				integrity_token,
+				mint_refresh_threshold,
+				websafe_fallback_token,
+				expiresAt: expires,
+			},
 			signals,
 			client,
 			dom,
 		);
+		minter.expiresAt = expires;
 
 		cur = minter;
-
-		const ttl = Number(estimated_ttl_secs);
-		expires =
-			Date.now() +
-			Math.max(1, (Number.isFinite(ttl) && ttl > 0 ? ttl : 300) - 30) * 1000;
 
 		return minter;
 	})();
@@ -640,15 +684,25 @@ export async function getWebPo(useYouTubeAPI = true): Promise<Minter> {
 export async function fetch_pot(
 	contentBinding: string,
 	useYouTubeAPI = true,
-): Promise<{ poToken: string; contentBinding: string; ttl: number }> {
+	ttl: number | null = null,
+): Promise<{
+	poToken: string;
+	contentBinding: string;
+	ttl: number;
+	minterSession: string | null;
+}> {
 	const minter = await getWebPo(useYouTubeAPI);
-
-	const remainingTtl = Math.max(1, Math.floor((expires - Date.now()) / 1000));
+	const minter_expires = minter.expiresAt || expires;
+	const token_expires =
+		typeof ttl === "number" && Number.isFinite(ttl) && ttl > 0
+			? Math.min(minter_expires, Date.now() + ttl)
+			: minter_expires;
 
 	return {
 		poToken: await minter.mintAsWebsafeString(contentBinding),
 		contentBinding,
-		ttl: remainingTtl,
+		ttl: Math.max(0, Math.floor((token_expires - Date.now()) / 1000)),
+		minterSession: minter.integrityTokenData?.integrity_token || null,
 	};
 }
 

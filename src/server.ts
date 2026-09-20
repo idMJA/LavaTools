@@ -606,11 +606,19 @@ function createApp(spotifyClient: SpotifyClient | null) {
 					const reqBody = (body || {}) as {
 						content_binding?: string;
 						coldToken?: boolean;
+						ttl?: number;
 					};
+
+					const reqTtl =
+						typeof reqBody.ttl === "number" &&
+						Number.isFinite(reqBody.ttl) &&
+						reqBody.ttl > 0
+							? reqBody.ttl * 1000
+							: null;
 
 					const contentBinding =
 						reqBody.content_binding || (await getVisitorData());
-					const result = await fetch_pot(contentBinding);
+					const result = await fetch_pot(contentBinding, true, reqTtl);
 
 					const response: Record<string, string | number | null> = {
 						poToken: result.poToken,
@@ -639,6 +647,11 @@ function createApp(spotifyClient: SpotifyClient | null) {
 				body: t.Object({
 					content_binding: t.Optional(t.String()),
 					coldToken: t.Optional(t.Boolean()),
+					ttl: t.Optional(
+						t.Number({
+							description: "Custom TTL for token in seconds",
+						}),
+					),
 				}),
 				headers: t.Object({
 					authorization: t.Optional(
