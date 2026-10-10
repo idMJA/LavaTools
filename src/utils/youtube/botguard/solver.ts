@@ -483,23 +483,6 @@ export async function getWebPo(useYouTubeAPI = true): Promise<Minter> {
 			}
 		} catch {}
 
-		const win = dom.window as unknown as {
-			yt?: { config_?: Record<string, unknown> };
-		};
-		if (!win.yt?.config_?.EVENT_ID) {
-			win.yt = win.yt || {};
-			win.yt.config_ = win.yt.config_ || {};
-			if (!win.yt.config_.EVENT_ID) {
-				const rand_bytes = new Uint8Array(16);
-				crypto.getRandomValues(rand_bytes);
-				win.yt.config_.EVENT_ID = Uint8ToBase64(rand_bytes, true).replace(
-					/=+$/,
-					"",
-				);
-			}
-			glob.yt = win.yt;
-		}
-
 		if (
 			!challenge ||
 			typeof challenge !== "object" ||
