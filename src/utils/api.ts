@@ -15,6 +15,6 @@ export function parseCookies(
 	return cookies;
 }
 
-export function isForceEnabled(force?: string): boolean {
+export function isForced(force?: string): boolean {
 	return ["1", "yes", "true"].includes((force || "").toLowerCase());
 }

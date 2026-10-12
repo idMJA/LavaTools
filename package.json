@@ -1,19 +1,24 @@
 {
   "name": "lavatools",
-  "version": "1.0.70",
+  "version": "1.1.0",
   "type": "module",
   "description": "A collection of tools for LavaLink",
   "main": "src/index.ts",
-  "author": "Kiyomi Fujiwara <kiyomi@mja.moe>",
+  "author": {
+    "name": "Kiyomi Fujiwara",
+    "email": "kiyomi@mja.moe",
+    "url": "https://mja.moe"
+  },
   "license": "MIT",
   "scripts": {
     "start": "bun run src/index.ts",
     "dev": "bun run --watch src/index.ts",
     "lint": "biome check ./src",
     "test": "bun test",
-    "typecheck:app": "tsc -p tsconfig.app.json --noEmit",
+    "typecheck": "tsc --noEmit",
     "format": "biome check --write --unsafe ./src",
-    "update:ejs": "bun run scripts/update-ejs.ts"
+    "update:ejs": "bun run ./scripts/update-ejs.ts",
+    "migrate:config": "bun run ./scripts/migrate-config.ts"
   },
   "lint-staged": {
     "*.ts": [

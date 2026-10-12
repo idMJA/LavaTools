@@ -1,40 +1,59 @@
+import type { KeyRotationConfig, LavalinkServerConfig } from "./lavalink";
+
 type SpotifyFetchMethod = "api" | "browser";
 
 /**
  * Spotify configuration settings.
  */
 interface SpotifyConfig {
-	/**
-	 * Spotify data fetch method.
-	 * - "api": Fetches data directly from Spotify using third-party secrets.
-	 * - "browser": Fetches data directly from Spotify by opening a browser.
-	 */
+	enabled?: boolean;
 	fetchMethod: SpotifyFetchMethod;
+}
+
+export type BotGuardExecutionMode = "auto" | "worker" | "vm" | "direct";
+
+export interface BotGuardConfig {
+	/**
+	 * Execution sandbox mode for running untrusted Google BotGuard VM scripts:
+	 * - "auto": Intelligently selects "worker" thread pool when workers > 1, or "vm" sandbox.
+	 * - "worker": Runs BotGuard in isolated worker threads with hardened node:vm (highest security and non-blocking).
+	 * - "vm": In-process hardened node:vm with execution timeouts (memory-efficient, ideal for low-RAM containers).
+	 * - "direct": Legacy execution using global eval/Function without sandboxing.
+	 * Default: "auto"
+	 */
+	mode?: BotGuardExecutionMode;
+
+	/**
+	 * Hard execution timeout in milliseconds for BotGuard challenge evaluation.
+	 * Prevents CPU freeze / DoS if an invalid challenge script is received.
+	 * Default: 5000 (5 seconds)
+	 */
+	timeout?: number;
+
+	/**
+	 * Number of worker threads for BotGuard execution when running in "worker" mode.
+	 * Default: 1
+	 */
+	workers?: number;
+
+	/**
+	 * Maximum queue size for concurrent BotGuard generation requests.
+	 * Default: 32
+	 */
+	queueSize?: number;
 }
 
 /**
  * YouTube configuration settings.
  */
 interface YouTubeConfig {
-	/**
-	 * Authorization token for YouTube API endpoints.
-	 * Used as "Authorization: token" header (without Bearer prefix).
-	 */
+	enabled?: boolean;
+	cipherEnabled?: boolean;
+	botguardEnabled?: boolean;
 	auth: string;
-
-	/**
-	 * Forces all cipher requests to use a specific player variant (e.g. "IAS").
-	 * Available variants: "IAS" | "IAS_TCC" | "IAS_TCE" | "ES5" | "ES6" | "ES6_TCC" | "ES6_TCE" | "TV" | "TV_ES6" | "PHONE" | "EMBED" | "EMBED_ES6" | "HOUSE"
-	 * Set to null or undefined to follow the variant sent by Lavalink.
-	 * Default / recommended is "IAS" for consistent playback stability.
-	 */
 	overridePlayerVariant?: string | null;
-
-	/**
-	 * Forces all cipher requests to use a specific YouTube player script ID (e.g. "44899b31").
-	 * Set to null or undefined to use the player ID requested by Lavalink.
-	 */
 	overridePlayerId?: string | null;
+	botguard?: BotGuardConfig;
 }
 
 /**
@@ -43,6 +62,13 @@ interface YouTubeConfig {
 interface ServerConfig {
 	host: string;
 	port?: number;
+}
+
+export interface FeaturesConfig {
+	cipher?: boolean;
+	botguard?: boolean;
+	spotify?: boolean;
+	rotation?: boolean;
 }
 
 export interface KiyomiConfiguration {
@@ -56,7 +82,12 @@ export interface KiyomiConfiguration {
 		filePath?: string;
 	};
 
+	enabled?: FeaturesConfig;
+
 	spotify: SpotifyConfig;
 
 	youtube: YouTubeConfig;
+
+	rotation?: KeyRotationConfig;
+	nodes?: LavalinkServerConfig[];
 }

@@ -1,3 +1,8 @@
+/*
+Taken from https://github.com/yt-dlp/ejs
+Auto-synced by scripts/update-ejs.ts
+*/
+
 import { type ESTree, parse } from "meriyah";
 
 import type { DeepPartial } from "#kiyomi/ejs";

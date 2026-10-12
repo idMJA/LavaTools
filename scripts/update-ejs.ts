@@ -1,7 +1,13 @@
+/*
+Taken from https://github.com/yt-dlp/ejs
+Auto-synced by scripts/update-ejs.ts
+*/
+
 import { execSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
+const EJS_UPSTREAM_URL = "https://github.com/yt-dlp/ejs";
 const BASE_URL = "https://raw.githubusercontent.com/yt-dlp/ejs/main";
 const TARGET_DIR = join(import.meta.dir, "../src/utils/youtube/cipher/ejs");
 
@@ -62,10 +68,11 @@ for (const file of files) {
 		throw new Error(`Failed to fetch ${file.url}: ${res.statusText}`);
 	}
 	let text = await res.text();
+	const headerCredit = `/*\nTaken from ${EJS_UPSTREAM_URL}\nAuto-synced by scripts/update-ejs.ts\n*/\n\n`;
 	if (file.patch) {
 		text = file.patch(text);
 	}
-	writeFileSync(join(TARGET_DIR, file.local), text);
+	writeFileSync(join(TARGET_DIR, file.local), `${headerCredit}${text}`);
 }
 
 console.log("Formatting updated files with Biome...");

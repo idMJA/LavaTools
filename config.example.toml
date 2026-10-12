@@ -1,0 +1,68 @@
+# LavaTools Configuration
+
+[enabled]
+cipher = true
+botguard = true
+spotify = true
+rotation = true
+
+[server]
+host = "0.0.0.0"
+port = 3000
+# Path to local Chrome/Chromium binary (optional, used if spotify fetchMethod = "browser")
+browserPath = "/usr/bin/google-chrome-stable"
+
+[logging]
+# Log level: "error" | "warn" | "info" | "debug"
+level = "info"
+toFile = false
+filePath = "./logs/app.log"
+
+[spotify]
+# Method to fetch anonymous token: "browser" (via Chrome) or "api"
+fetchMethod = "browser"
+
+[youtube]
+# Authentication password for LavaTools API (leave empty to disable auth)
+auth = "TsukasaAlyaMahiru"
+# YouTube player variant override (recommended: "IAS")
+# Options: "IAS" | "IAS_TCC" | "IAS_TCE" | "ES5" | "ES6" | "TV" | "TV_ES6" | "PHONE" | "EMBED" | "EMBED_ES6" | "HOUSE"
+overridePlayerVariant = "IAS"
+# Specific player script ID override (e.g. "44899b31"), or empty to follow requested player
+overridePlayerId = ""
+
+[youtube.botguard]
+# Execution mode: "auto" | "worker" | "vm" | "direct"
+mode = "auto"
+# Execution timeout in milliseconds to prevent process lockup
+timeout = 5000
+# Dedicated worker threads (default 1 to avoid high RAM usage)
+workers = 1
+queueSize = 32
+
+# Target Lavalink server(s) to receive rotated credentials
+[[nodes]]
+name = "Primary Lavalink"
+host = "localhost"
+port = 8080
+secure = false
+password = "PASSWORD"
+
+[rotation]
+# Interval in minutes between automatic rotations
+interval = 60
+# Error threshold before rotating key
+maxErrors = 3
+auto = true
+
+# Optional Spotify keys for Lavalink rotation
+# [[rotation.keys.spotify]]
+# clientId = "your_spotify_client_id"
+# clientSecret = "your_spotify_client_secret"
+# spDc = ""
+
+# Optional Deezer keys for Lavalink rotation
+# [[rotation.keys.deezer]]
+# arl = "your_deezer_arl_cookie"
+# masterDecryptionKey = ""
+# formats = ["FLAC", "MP3_320"]

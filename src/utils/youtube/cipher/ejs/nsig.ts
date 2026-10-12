@@ -1,3 +1,8 @@
+/*
+Taken from https://github.com/yt-dlp/ejs
+Auto-synced by scripts/update-ejs.ts
+*/
+
 import { generate } from "astring";
 import type { ESTree } from "meriyah";
 import {

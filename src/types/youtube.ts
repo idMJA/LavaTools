@@ -38,3 +38,20 @@ export interface SolverFunctions {
 	n: ((val: string) => string) | null;
 	sig: ((val: string) => string) | null;
 }
+
+export interface IntegrityTokenData {
+	integrity_token?: string;
+	mint_refresh_threshold?: number;
+	mintRefreshThreshold?: number;
+	websafe_fallback_token?: string;
+	expiresAt?: number;
+}
+
+export interface DecodedColdStartToken {
+	contentBinding: string;
+	timestamp: number;
+	unknownVal: number;
+	clientState: number;
+	keys: [number, number];
+	date: Date;
+}

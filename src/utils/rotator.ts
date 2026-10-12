@@ -101,13 +101,18 @@ export class SpotifyKeyRotator {
 		return null;
 	}
 
+	private getServers(): LavalinkServerConfig[] {
+		return this.config.nodes || [];
+	}
+
 	/**
 	 * Update all Lavalink servers with new Spotify credentials
 	 */
 	private async updateAllLavalinkServers(
 		keySet: SpotifyKeySet,
 	): Promise<boolean> {
-		const updatePromises = this.config.lavalinkServers.map((server) =>
+		const servers = this.getServers();
+		const updatePromises = servers.map((server) =>
 			this.updateLavalinkConfig(server, keySet),
 		);
 
@@ -254,7 +259,7 @@ export class SpotifyKeyRotator {
 	 */
 	getStatus() {
 		const currentKey = this.getCurrentKey();
-		const lavalinkServers = this.config.lavalinkServers.map((server) => {
+		const lavalinkServers = this.getServers().map((server) => {
 			const protocol = server.secure ? "https" : "http";
 			const port = server.port || 8080;
 			return {
@@ -464,10 +469,15 @@ export class DeezerKeyRotator {
 		return null;
 	}
 
+	private getServers(): LavalinkServerConfig[] {
+		return this.config.nodes || [];
+	}
+
 	private async updateAllLavalinkServers(
 		keySet: DeezerKeySet,
 	): Promise<boolean> {
-		const updatePromises = this.config.lavalinkServers.map((server) =>
+		const servers = this.getServers();
+		const updatePromises = servers.map((server) =>
 			this.updateLavalinkConfig(server, keySet),
 		);
 
@@ -596,7 +606,7 @@ export class DeezerKeyRotator {
 
 	getStatus() {
 		const currentKey = this.getCurrentKey();
-		const lavalinkServers = this.config.lavalinkServers.map((server) => {
+		const lavalinkServers = this.getServers().map((server) => {
 			const protocol = server.secure ? "https" : "http";
 			const port = server.port || 8080;
 			return {
@@ -672,7 +682,7 @@ let deezerKeyRotator: DeezerKeyRotator | null = null;
 /**
  * Initialize global key rotators for Spotify and Deezer
  */
-export function initializeKeyRotator(config: KeyRotationConfig): void {
+export function initRotator(config: KeyRotationConfig): void {
 	if (spotifyKeyRotator) {
 		spotifyKeyRotator.stopAutoRotation();
 	}
@@ -703,7 +713,7 @@ export function initializeKeyRotator(config: KeyRotationConfig): void {
 /**
  * Get global Spotify key rotator instance
  */
-export function getKeyRotator(): SpotifyKeyRotator | null {
+export function getRotator(): SpotifyKeyRotator | null {
 	return spotifyKeyRotator;
 }
 
@@ -717,7 +727,7 @@ export function getDeezerKeyRotator(): DeezerKeyRotator | null {
 /**
  * Shutdown all key rotators
  */
-export function shutdownKeyRotator(): void {
+export function stopRotator(): void {
 	if (spotifyKeyRotator) {
 		spotifyKeyRotator.stopAutoRotation();
 		spotifyKeyRotator = null;

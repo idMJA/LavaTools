@@ -1,19 +1,21 @@
+import vm from "node:vm";
 import { JSDOM, VirtualConsole } from "jsdom";
+import { Configuration } from "#kiyomi/config";
 import {
-	base64ToUint8,
 	buildURL,
-	COLD_START_MAX_BINDING_BYTES,
 	INNERTUBE_API_KEY,
 	parse_json,
 	REQUEST_KEY,
 	TV_CONFIG,
 	TV_USER_AGENT,
-	Uint8ToBase64,
+	toBase64,
+	toUint8,
 	USER_AGENT,
 	WEB_CLIENT_NAME,
 	WEB_CLIENT_VERSION,
 	YT_BASE,
 } from "#kiyomi/utils";
+import { Minter } from "./minter";
 
 interface BotGuardOptions {
 	program: string;
@@ -22,7 +24,7 @@ interface BotGuardOptions {
 	userInteractionElement?: unknown;
 }
 
-interface BotGuardVMClient {
+export interface BotGuardVMClient {
 	snapshot(
 		args: {
 			contentBinding?: string;
@@ -60,14 +62,14 @@ function release_dom(dom: JSDOM | undefined) {
 	dom.window.close();
 }
 
-function parse_waa_challenge(raw_data: unknown): unknown {
+function parseChallenge(raw_data: unknown): unknown {
 	const rawArr = raw_data as Record<string, unknown>[];
 	if (rawArr?.[0]?.bgChallenge) return rawArr[0];
 
 	let challenge_data: unknown[];
 
 	if (rawArr?.length > 1 && typeof rawArr[1] === "string") {
-		const bytes = base64ToUint8(rawArr[1]);
+		const bytes = toUint8(rawArr[1]);
 		challenge_data = JSON.parse(
 			new TextDecoder().decode(bytes.map((value) => value + 97)),
 		);
@@ -115,7 +117,7 @@ function parse_waa_challenge(raw_data: unknown): unknown {
 	};
 }
 
-export async function create_bg(
+export async function createVM(
 	options: BotGuardOptions,
 ): Promise<BotGuardVMClient> {
 	const vm = options.globalObject[options.globalName] as unknown as {
@@ -243,103 +245,6 @@ export async function create_bg(
 	};
 }
 
-export interface IntegrityTokenData {
-	integrity_token?: string;
-	mint_refresh_threshold?: number;
-	mintRefreshThreshold?: number;
-	websafe_fallback_token?: string;
-	expiresAt?: number;
-}
-
-class Minter {
-	private callback: (data: Uint8Array) => Promise<Uint8Array>;
-	private client: BotGuardVMClient;
-	private dom: JSDOM;
-	public integrityTokenData?: IntegrityTokenData;
-	public expiresAt = 0;
-	public mintThreshold = 100;
-	public mintCount = 0;
-	private active = 0;
-	private retired = false;
-	private closed = false;
-
-	constructor(
-		callback: (data: Uint8Array) => Promise<Uint8Array>,
-		client: BotGuardVMClient,
-		dom: JSDOM,
-		iTdata?: IntegrityTokenData,
-	) {
-		this.callback = callback;
-		this.client = client;
-		this.dom = dom;
-		this.integrityTokenData = iTdata;
-		this.expiresAt = iTdata?.expiresAt || 0;
-		const threshold = Number(
-			iTdata?.mint_refresh_threshold ?? iTdata?.mintRefreshThreshold,
-		);
-		this.mintThreshold =
-			Number.isFinite(threshold) && threshold > 0 ? threshold : 100;
-	}
-
-	isExhausted() {
-		return this.mintThreshold > 0 && this.mintCount >= this.mintThreshold;
-	}
-
-	static async create(
-		integrityToken: IntegrityTokenData,
-		webPoSignalOutput: unknown[],
-		client: BotGuardVMClient,
-		dom: JSDOM,
-	): Promise<Minter> {
-		const getMinter = webPoSignalOutput[0] as
-			| ((
-					token: Uint8Array,
-			  ) => Promise<(data: Uint8Array) => Promise<Uint8Array>>)
-			| undefined;
-
-		if (!getMinter || !integrityToken.integrity_token)
-			throw new Error("Could not create WebPO minter");
-
-		const callback = await getMinter(
-			base64ToUint8(integrityToken.integrity_token),
-		);
-
-		if (!(callback instanceof Function))
-			throw new Error("WebPO minter unavailable");
-
-		return new Minter(callback, client, dom, integrityToken);
-	}
-
-	retire() {
-		this.retired = true;
-		this.close_idles();
-	}
-
-	close_idles() {
-		if (!this.retired || this.active > 0 || this.closed) return;
-
-		this.closed = true;
-		release_dom(this.dom);
-
-		Promise.resolve(this.client?.shutdown?.()).catch(() => {});
-	}
-
-	async mintAsWebsafeString(contentBinding: string): Promise<string> {
-		this.active++;
-		this.mintCount++;
-
-		try {
-			return Uint8ToBase64(
-				await this.callback(new TextEncoder().encode(contentBinding)),
-				true,
-			);
-		} finally {
-			this.active--;
-			this.close_idles();
-		}
-	}
-}
-
 let minter_promise: Promise<Minter> | undefined;
 let expires = 0;
 let cur: Minter | undefined;
@@ -440,10 +345,7 @@ export async function getWebPo(useYouTubeAPI = true): Promise<Minter> {
 			if (!win.yt.config_.EVENT_ID) {
 				const rand_bytes = new Uint8Array(16);
 				crypto.getRandomValues(rand_bytes);
-				win.yt.config_.EVENT_ID = Uint8ToBase64(rand_bytes, true).replace(
-					/=+$/,
-					"",
-				);
+				win.yt.config_.EVENT_ID = toBase64(rand_bytes, true).replace(/=+$/, "");
 			}
 
 			glob.yt = win.yt;
@@ -456,7 +358,7 @@ export async function getWebPo(useYouTubeAPI = true): Promise<Minter> {
 						T?: string;
 					};
 					challenge = (
-						parsed.R?.bgChallenge ? parsed.R : parse_waa_challenge(parsed.R)
+						parsed.R?.bgChallenge ? parsed.R : parseChallenge(parsed.R)
 					) as Record<string, unknown> | undefined;
 					eacrToken = parsed.T;
 				} catch {
@@ -475,7 +377,7 @@ export async function getWebPo(useYouTubeAPI = true): Promise<Minter> {
 							T?: string;
 						};
 						challenge = (
-							parsed.R?.bgChallenge ? parsed.R : parse_waa_challenge(parsed.R)
+							parsed.R?.bgChallenge ? parsed.R : parseChallenge(parsed.R)
 						) as Record<string, unknown> | undefined;
 						eacrToken = parsed.T || eacrToken;
 					} catch {}
@@ -546,7 +448,7 @@ export async function getWebPo(useYouTubeAPI = true): Promise<Minter> {
 
 			if (!waa_res.ok) throw new Error(`WAA Create returned ${waa_res.status}`);
 
-			challenge = parse_waa_challenge(await waa_res.json()) as Record<
+			challenge = parseChallenge(await waa_res.json()) as Record<
 				string,
 				unknown
 			>;
@@ -597,12 +499,57 @@ export async function getWebPo(useYouTubeAPI = true): Promise<Minter> {
 
 		if (!interpreter) throw new Error("couldn't load botguard interpreter");
 
-		new Function(interpreter)();
+		const botguardConfig = Configuration.youtube.botguard || {};
+		const executionMode = botguardConfig.mode || "auto";
+		const timeout = botguardConfig.timeout || 5000;
 
-		const client = await create_bg({
+		let vmGlobalScope: Record<string, unknown> =
+			globalThis as unknown as Record<string, unknown>;
+
+		if (executionMode === "direct") {
+			new Function(interpreter)();
+		} else {
+			// Sandboxed node:vm execution with hardened isolation and timeout kill
+			const sandbox = Object.assign(Object.create(null), {
+				window: dom.window,
+				document: dom.window.document,
+				location: dom.window.location,
+				origin: dom.window.origin,
+				navigator: dom.window.navigator,
+				yt: dom.window.yt,
+				console,
+				setTimeout,
+				clearTimeout,
+				setInterval,
+				clearInterval,
+				TextEncoder,
+				TextDecoder,
+				atob,
+				btoa,
+				Uint8Array,
+				Array,
+				Object,
+				String,
+				Number,
+				Math,
+				Date,
+				RegExp,
+				JSON,
+			});
+
+			const context = vm.createContext(sandbox);
+			vm.runInContext(interpreter, context, {
+				timeout,
+				displayErrors: false,
+			});
+
+			vmGlobalScope = sandbox as Record<string, unknown>;
+		}
+
+		const client = await createVM({
 			program: bgChallenge.program as string,
 			globalName: bgChallenge.globalName as string,
-			globalObject: globalThis as unknown as Record<string, unknown>,
+			globalObject: vmGlobalScope,
 		});
 
 		const signals: unknown[] = [];
@@ -682,97 +629,9 @@ export async function fetch_pot(
 			: minter_expires;
 
 	return {
-		poToken: await minter.mintAsWebsafeString(contentBinding),
+		poToken: await minter.mint(contentBinding),
 		contentBinding,
 		ttl: Math.max(0, Math.floor((token_expires - Date.now()) / 1000)),
 		minterSession: minter.integrityTokenData?.integrity_token || null,
-	};
-}
-
-export function createColdStartToken(
-	contentBinding: string,
-	clientState = 1,
-): string | undefined {
-	const bytecode = new TextEncoder().encode(contentBinding);
-
-	if (bytecode.length > COLD_START_MAX_BINDING_BYTES) return;
-
-	const timestamp = Math.floor(Date.now() / 1000);
-	const rand_keys = [
-		Math.floor(Math.random() * 256),
-		Math.floor(Math.random() * 256),
-	];
-
-	const header = rand_keys.concat(
-		[0, clientState],
-		[
-			(timestamp >> 24) & 0xff,
-			(timestamp >> 16) & 0xff,
-			(timestamp >> 8) & 0xff,
-			timestamp & 0xff,
-		],
-	);
-
-	const packet = new Uint8Array(2 + header.length + bytecode.length);
-
-	packet[0] = 34;
-	packet[1] = header.length + bytecode.length;
-	packet.set(header, 2);
-	packet.set(bytecode, 2 + header.length);
-
-	const payload = packet.subarray(2);
-
-	for (let i = 2; i < payload.length; i++) {
-		const curr = payload[i];
-		const key = payload[i % 2];
-		if (curr !== undefined && key !== undefined) {
-			payload[i] = curr ^ key;
-		}
-	}
-
-	return Uint8ToBase64(packet, true);
-}
-
-export function decodeColdStartToken(token: string): {
-	contentBinding: string;
-	timestamp: number;
-	unknownVal: number;
-	clientState: number;
-	keys: [number, number];
-	date: Date;
-} {
-	const packet = base64ToUint8(token);
-
-	const p0 = packet[0];
-	if (packet.length < 10 || p0 !== 34)
-		throw new Error("invalid cold start token");
-
-	const length = packet[1];
-	if (length === undefined || packet.length !== length + 2 || length < 8)
-		throw new Error("invalid cold start packet length");
-
-	const payload = packet.slice(2);
-	for (let i = 2; i < payload.length; i++) {
-		const curr = payload[i];
-		const key = payload[i % 2];
-		if (curr !== undefined && key !== undefined) {
-			payload[i] = curr ^ key;
-		}
-	}
-
-	const p4 = payload[4] ?? 0;
-	const p5 = payload[5] ?? 0;
-	const p6 = payload[6] ?? 0;
-	const p7 = payload[7] ?? 0;
-
-	const timestamp = ((p4 << 24) | (p5 << 16) | (p6 << 8) | p7) >>> 0;
-
-	return {
-		contentBinding: new TextDecoder().decode(payload.subarray(8)),
-		timestamp,
-		unknownVal: payload[2] ?? 0,
-		clientState: payload[3] ?? 0,
-		keys: [payload[0] ?? 0, payload[1] ?? 0],
-		date: new Date(timestamp * 1000),
 	};
 }

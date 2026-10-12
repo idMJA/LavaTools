@@ -1,3 +1,8 @@
+/*
+Taken from https://github.com/yt-dlp/ejs
+Auto-synced by scripts/update-ejs.ts
+*/
+
 type DP<T> = T extends (infer U)[]
 	? DeepPartial<U>[]
 	: T extends object

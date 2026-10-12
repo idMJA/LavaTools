@@ -5,17 +5,17 @@ import {
 	YT_BASE,
 } from "#kiyomi/utils";
 
-export function base64ToUint8(base64: string): Uint8Array {
+export function toUint8(base64: string): Uint8Array {
 	const base64Mod = base64.replace(
 		REG_FOR_BASE64,
 		(match) => BASE64_MAP[match] || match,
 	);
-	return new Uint8Array([...atob(base64Mod)].map((char) => char.charCodeAt(0)));
+	return new Uint8Array(Buffer.from(base64Mod, "base64"));
 }
 
-export function Uint8ToBase64(u8: Uint8Array, base64url = false): string {
-	const result = btoa(String.fromCharCode(...u8));
-	return base64url ? result.replace(/\+/g, "-").replace(/\//g, "_") : result;
+export function toBase64(u8: Uint8Array, base64url = false): string {
+	const result = Buffer.from(u8).toString(base64url ? "base64url" : "base64");
+	return result;
 }
 
 export function buildURL(endpoint: string, use_api = true): string {

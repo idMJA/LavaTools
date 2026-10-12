@@ -1,13 +1,12 @@
 import type { SignatureRequest, SignatureResponse } from "#kiyomi/types";
 import { getSolvers, logs } from "#kiyomi/utils";
 
-export async function decryptSignature(
+export async function decryptSig(
 	request: SignatureRequest,
 ): Promise<SignatureResponse> {
 	const { encrypted_signature, n_param, player_url } = request;
 
 	const solvers = await getSolvers(player_url);
-
 	if (!solvers) {
 		throw new Error("Failed to generate solvers from player script");
 	}

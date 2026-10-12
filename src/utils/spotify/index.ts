@@ -34,9 +34,7 @@ class DirectSpotifyClient implements SpotifyClient {
 	}
 }
 
-async function checkBrowserAvailability(
-	executablePath?: string,
-): Promise<boolean> {
+async function hasBrowser(executablePath?: string): Promise<boolean> {
 	try {
 		logs("info", "Checking browser availability...");
 		const launchOptions: Parameters<typeof playwright.chromium.launch>[0] = {
@@ -84,9 +82,7 @@ export async function createSpotifyClient(
 	const method = config.spotify.fetchMethod;
 
 	if (method === "browser") {
-		const browserAvailable = await checkBrowserAvailability(
-			config.browserPath || undefined,
-		);
+		const browserAvailable = await hasBrowser(config.browserPath || undefined);
 
 		if (!browserAvailable) {
 			logs(
@@ -116,7 +112,7 @@ export async function createSpotifyClient(
 	throw new Error(`Unsupported fetch method: ${method}`);
 }
 
-export async function initializeSpotifyClient(
+export async function initSpotify(
 	config: KiyomiConfiguration,
 ): Promise<SpotifyClient> {
 	try {

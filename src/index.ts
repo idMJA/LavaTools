@@ -1,26 +1,31 @@
-import { Configuration, KeyRotationConfiguration } from "#kiyomi/config";
-import type { SpotifyClient } from "#kiyomi/types";
 import {
-	initializeKeyRotator,
-	initializeSpotifyClient,
-	logs,
-	shutdownKeyRotator,
-} from "#kiyomi/utils";
+	Configuration,
+	isSpotifyEnabled,
+	KeyRotationConfiguration,
+} from "#kiyomi/config";
+import type { SpotifyClient } from "#kiyomi/types";
+import { initRotator, initSpotify, logs, stopRotator } from "#kiyomi/utils";
 import { startServer } from "./server";
 
 let spotifyClient: SpotifyClient | null = null;
 
 async function main() {
 	try {
-		spotifyClient = await initializeSpotifyClient(Configuration);
+		if (isSpotifyEnabled()) {
+			spotifyClient = await initSpotify(Configuration);
+		} else {
+			logs("info", "Spotify service disabled in config.toml");
+		}
 
 		const hasSpotifyKeys =
 			(KeyRotationConfiguration.keys.spotify?.length ?? 0) > 0;
 		const hasDeezerKeys =
 			(KeyRotationConfiguration.keys.deezer?.length ?? 0) > 0;
 
-		if (hasSpotifyKeys || hasDeezerKeys) {
-			initializeKeyRotator(KeyRotationConfiguration);
+		if (KeyRotationConfiguration.enabled === false) {
+			logs("info", "Key rotation service disabled in config.toml");
+		} else if (hasSpotifyKeys || hasDeezerKeys) {
+			initRotator(KeyRotationConfiguration);
 			if (hasSpotifyKeys) {
 				logs(
 					"info",
@@ -36,7 +41,7 @@ async function main() {
 		} else {
 			logs(
 				"warn",
-				"No Spotify or Deezer keys configured for rotation. Add keys to KeyRotationConfiguration in config.ts",
+				"No Spotify or Deezer keys configured for rotation. Add keys to [rotation.keys] in config.toml",
 			);
 		}
 	} catch (error) {
@@ -50,7 +55,7 @@ async function main() {
 		logs("info", "Shutting down server...");
 
 		try {
-			shutdownKeyRotator();
+			stopRotator();
 
 			if (spotifyClient?.cleanup) {
 				await spotifyClient.cleanup();

@@ -59,17 +59,15 @@ export interface DeezerKeySet {
 }
 
 export interface KeyRotationConfig {
-	/**
-	 * Array of Lavalink servers to update with rotated keys.
-	 * The key rotation will update all servers in the list.
-	 * Supports multiple Lavalink instances for load balancing or redundancy.
-	 */
-	lavalinkServers: LavalinkServerConfig[];
+	enabled?: boolean;
+	nodes?: LavalinkServerConfig[];
 	keys: {
 		spotify?: SpotifyKeySet[];
 		deezer?: DeezerKeySet[];
 	};
+	interval?: number; // in minutes, alias for rotationInterval
 	rotationInterval?: number; // in minutes, default 60
 	maxErrors?: number; // max errors before rotating, default 3
+	auto?: boolean; // alias for autoRotate
 	autoRotate?: boolean; // default true
 }

@@ -60,97 +60,69 @@ If `CHROME_PATH` is not set, Playwright will use its default browser (if install
 ## Build & Run
 
 ```bash
-npm start
+bun start
 ```
 ### Configuration
 
-Update the configuration in `src/config.ts`:
+See [CONFIG.md](CONFIG.md) for full configuration reference and documentation.
 
-```typescript
-export const Configuration: KiyomiConfiguration = {
-	server: {
-		host: "0.0.0.0",
-		port: 3000,
-	},
+Copy `config.example.toml` to `config.toml` and update settings:
 
-	// Optional: Set custom browser path for Spotify token fetching
-	// browserPath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-
-	logging: {
-		level: "info", // "error" | "warn" | "info" | "debug"
-		toFile: false,
-		filePath: "./logs/app.log",
-	},
-
-	spotify: {
-		fetchMethod: "api", // "api" | "browser"
-	},
-
-	youtube: {
-		auth: "your_secret_token", // Set your auth token here
-
-		// Forces all cipher requests to use a specific player variant.
-		// "IAS" is strongly recommended by yt-cipher for consistent decryption stability.
-		// Available: "IAS" | "IAS_TCC" | "IAS_TCE" | "ES5" | "ES6" | "TV" | "TV_ES6" | "PHONE" | "EMBED" | "EMBED_ES6" | "HOUSE" | null
-		overridePlayerVariant: "IAS",
-
-		// Forces all cipher requests to use a specific YouTube player script ID (e.g. "44899b31").
-		// Set to null to use whatever player ID is requested by Lavalink.
-		overridePlayerId: null,
-	},
-};
-
-// Configure Spotify key rotation for Lavalink (see src/config/key.ts)
+```bash
+cp config.example.toml config.toml
 ```
 
-Update the key rotation configuration in `src/config/key.ts`:
-
-```typescript
-export const KeyRotationConfiguration: KeyRotationConfig = {
-	lavalinkServers: [
-		// Primary Lavalink server
-		{
-			name: "Primary Lavalink",
-			host: "localhost",
-			port: 8080,
-			secure: false, // false for HTTP, true for HTTPS
-			password: "your_lavalink_password",
-		},
-		// Add more Lavalink servers for load balancing or redundancy
-		// {
-		// 	name: "Secondary Lavalink",
-		// 	host: "lavalink-2.example.com",
-		// 	port: 8080,
-		// 	secure: true,
-		// 	password: "your_lavalink_password_2",
-		// },
-		// {
-		// 	name: "Backup Lavalink",
-		// 	host: "backup.example.com",
-		// 	port: 2333,
-		// 	secure: true,
-		// 	password: "your_lavalink_password_3",
-		// },
-	],
-	keys: [
-		// Add your Spotify keys here
-		// {
-		// 	clientId: "your_client_id_1",
-		// 	clientSecret: "your_client_secret_1",
-		// 	spDc: "your_sp_dc_1",
-		// },
-		// Add more keys for rotation
-		// {
-		// 	clientId: "your_client_id_2",
-		// 	clientSecret: "your_client_secret_2",
-		// 	spDc: "your_sp_dc_2",
-		// },
-	],
-	rotationInterval: 60, // Rotate every 60 minutes
-	maxErrors: 3, // Rotate after 3 errors
-	autoRotate: true, // Enable automatic rotation
-};
+If you are updating from an older version with TypeScript configs (`src/config/config.ts`), you can automatically migrate:
+```bash
+bun run migrate:config
 ```
+
+```toml
+[enabled]
+cipher = true
+botguard = true
+spotify = true
+rotation = true
+
+[server]
+host = "0.0.0.0"
+port = 3000
+browserPath = "/usr/bin/google-chrome-stable"
+
+[logging]
+level = "info"
+toFile = false
+filePath = "./logs/app.log"
+
+[spotify]
+fetchMethod = "api"
+
+[youtube]
+auth = "your_auth_token_here"
+overridePlayerVariant = "IAS"
+overridePlayerId = ""
+
+[youtube.botguard]
+mode = "auto"
+timeout = 5000
+workers = 1
+queueSize = 32
+
+[[nodes]]
+name = "Primary Lavalink"
+host = "localhost"
+port = 8080
+secure = false
+password = "PASSWORD"
+
+[rotation]
+interval = 60
+maxErrors = 3
+auto = true
+```
+
+1. **Configure Lavalink Nodes:** Add your server details under `[[nodes]]` in `config.toml`
+2. **Add Keys:** Add your Spotify credentials under `[[rotation.keys.spotify]]` and Deezer cookies under `[[rotation.keys.deezer]]`
 
 ### Running the Server
 
@@ -287,7 +259,7 @@ LavaTools includes an advanced Spotify and Deezer key rotation system that autom
 
 ### Setup
 
-1. Configure your Lavalink servers in `src/config/key.ts`:
+1. Configure your Lavalink servers under `[[keyRotation.lavalinkServers]]` in `config.toml`:
 
 ```typescript
 lavalinkServers: [

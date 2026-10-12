@@ -25,7 +25,7 @@ function extract(value: unknown): string | undefined {
 	}
 }
 
-async function fetch_initial_page(timeout: number): Promise<string> {
+async function fetchPage(timeout: number): Promise<string> {
 	const res = await fetch(YT_BASE, {
 		headers: {
 			accept: "*/*",
@@ -49,7 +49,7 @@ async function fetch_initial_page(timeout: number): Promise<string> {
 	return decodeURIComponent(result);
 }
 
-async function visitor_endpoint(timeout: number): Promise<string> {
+async function fetchVisitor(timeout: number): Promise<string> {
 	const res = await fetch(VISITOR_ID_ENDPOINT, {
 		method: "POST",
 		headers: {
@@ -89,10 +89,10 @@ export function getVisitorData(
 
 	reqs = (async () => {
 		try {
-			return await fetch_initial_page(timeout);
+			return await fetchPage(timeout);
 		} catch (e: unknown) {
 			try {
-				return await visitor_endpoint(timeout);
+				return await fetchVisitor(timeout);
 			} catch (e2: unknown) {
 				const err1 = (e as Error).message;
 				const err2 = (e2 as Error).message;

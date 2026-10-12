@@ -20,7 +20,7 @@ function normalizePlayerUrl(playerUrl: string): string {
 	}
 }
 
-export async function fetchPlayerFile(playerUrl: string): Promise<string> {
+export async function fetchPlayer(playerUrl: string): Promise<string> {
 	const normalizedPlayerUrl = normalizePlayerUrl(playerUrl);
 
 	const cached = playerCache.get(normalizedPlayerUrl);
@@ -61,7 +61,7 @@ export async function getSolvers(player_url: string): Promise<Solvers | null> {
 
 	let preprocessedPlayer = preprocessedCache.get(cacheKey);
 	if (!preprocessedPlayer) {
-		const rawPlayer = await fetchPlayerFile(player_url);
+		const rawPlayer = await fetchPlayer(player_url);
 		try {
 			preprocessedPlayer = preprocessPlayer(rawPlayer);
 		} catch (e) {

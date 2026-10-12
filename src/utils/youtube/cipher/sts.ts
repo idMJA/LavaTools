@@ -1,10 +1,5 @@
 import type { StsRequest, StsResponse } from "#kiyomi/types";
-import {
-	fetchPlayerFile,
-	getPlayerScript,
-	logs,
-	stsCache,
-} from "#kiyomi/utils";
+import { fetchPlayer, getPlayerScript, logs, stsCache } from "#kiyomi/utils";
 
 function normalizePlayerUrl(playerUrl: string): string {
 	try {
@@ -32,7 +27,7 @@ export async function getSts(
 		return { sts: cachedSts, cacheHit: true };
 	}
 
-	const playerContent = await fetchPlayerFile(player_url);
+	const playerContent = await fetchPlayer(player_url);
 
 	const stsPattern = /(signatureTimestamp|sts):(\d+)/;
 	const match = playerContent.match(stsPattern);

@@ -14,7 +14,7 @@
 
 # production
 /build
-src/config/config.ts
+config.toml
 
 # misc
 .DS_Store
