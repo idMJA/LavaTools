@@ -72,8 +72,17 @@ YouTube cipher and authorization settings.
 | Key | Type | Default | Description |
 | :--- | :---: | :---: | :--- |
 | `auth` | string | `""` | Authorization password for endpoints (sent via `Authorization: <password>` header). |
-| `overridePlayerVariant` | string | `"IAS"` | Enforces a specific player variant. Options: `"IAS"`, `"IAS_TCC"`, `"IAS_TCE"`, `"ES5"`, `"ES6"`, `"TV"`, `"TV_ES6"`, `"PHONE"`, `"EMBED"`, `"EMBED_ES6"`, `"HOUSE"`. |
+| `overridePlayerVariant` | string | `"IAS"` | Enforces a specific player variant. Options: `"IAS"`, `"IAS_TCC"`, `"IAS_TCE"`, `"IAS_TCL"`, `"ES5"`, `"ES6"`, `"ES6_TCC"`, `"ES6_TCE"`, `"ES6_TCL"`, `"TV"`, `"TV_ES6"`, `"TV_TCL"`, `"PHONE"`, `"EMBED"`, `"EMBED_ES6"`, `"EMBED_TCL"`, `"EMBED_ES6_TCL"`, `"HOUSE"`. |
 | `overridePlayerId` | string | `""` | Enforces a specific YouTube player script ID (e.g. `"44899b31"`), or empty to follow requested player. |
+
+#### YouTube Player Variants & TCL Support
+
+YouTube continuously updates its player script obfuscation. LavaTools supports modern script families:
+
+- **`IAS` (Recommended default)**: Standalone web player. Highly reliable and recommended by `yt-cipher` for general playback.
+- **`TV_TCL` / `IAS_TCL`**: New-generation YouTube player scripts using dynamic XOR indexing tables (introduced late 2026). Required when pairing TVHTML5 clients with Cobalt User-Agent to bypass Proof-of-Origin Tokens (POT).
+- **`TV` / `TV_ES6`**: Static living room player scripts without locale/region dependencies.
+- **`EMBED` / `EMBED_ES6`**: Automatically remapped to standard `IAS`/`ES6` core solvers for maximal stability.
 
 ---
 

@@ -12,6 +12,26 @@ interface SpotifyConfig {
 
 export type BotGuardExecutionMode = "auto" | "worker" | "vm" | "direct";
 
+export type SupportedPlayerVariant =
+	| "IAS"
+	| "IAS_TCC"
+	| "IAS_TCE"
+	| "IAS_TCL"
+	| "ES5"
+	| "ES6"
+	| "ES6_TCC"
+	| "ES6_TCE"
+	| "ES6_TCL"
+	| "TV"
+	| "TV_ES6"
+	| "TV_TCL"
+	| "PHONE"
+	| "EMBED"
+	| "EMBED_ES6"
+	| "EMBED_TCL"
+	| "EMBED_ES6_TCL"
+	| "HOUSE";
+
 export interface BotGuardConfig {
 	/**
 	 * Execution sandbox mode for running untrusted Google BotGuard VM scripts:
@@ -51,7 +71,7 @@ interface YouTubeConfig {
 	cipherEnabled?: boolean;
 	botguardEnabled?: boolean;
 	auth: string;
-	overridePlayerVariant?: string | null;
+	overridePlayerVariant?: SupportedPlayerVariant | string | null;
 	overridePlayerId?: string | null;
 	botguard?: BotGuardConfig;
 }

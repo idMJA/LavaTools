@@ -25,8 +25,8 @@ fetchMethod = "browser"
 [youtube]
 # Authentication password for LavaTools API (leave empty to disable auth)
 auth = "TsukasaAlyaMahiru"
-# YouTube player variant override (recommended: "IAS")
-# Options: "IAS" | "IAS_TCC" | "IAS_TCE" | "ES5" | "ES6" | "TV" | "TV_ES6" | "PHONE" | "EMBED" | "EMBED_ES6" | "HOUSE"
+# YouTube player variant override (recommended: "IAS" for general stability, or "TV_TCL" / "IAS_TCL" for TCL variants)
+# Options: "IAS" | "IAS_TCC" | "IAS_TCE" | "IAS_TCL" | "ES5" | "ES6" | "ES6_TCC" | "ES6_TCE" | "ES6_TCL" | "TV" | "TV_ES6" | "TV_TCL" | "PHONE" | "EMBED" | "EMBED_ES6" | "EMBED_TCL" | "EMBED_ES6_TCL" | "HOUSE"
 overridePlayerVariant = "IAS"
 # Specific player script ID override (e.g. "44899b31"), or empty to follow requested player
 overridePlayerId = ""
