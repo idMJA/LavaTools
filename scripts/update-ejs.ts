@@ -8,7 +8,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const EJS_UPSTREAM_URL = "https://github.com/yt-dlp/ejs";
-const BASE_URL = "https://raw.githubusercontent.com/yt-dlp/ejs/main";
+const BASE_URL = "https://raw.githubusercontent.com/ashton045/ejs/tcl";
 const TARGET_DIR = join(import.meta.dir, "../src/utils/youtube/cipher/ejs");
 
 mkdirSync(TARGET_DIR, { recursive: true });
@@ -44,7 +44,11 @@ const files: {
 		patch: (content: string) => {
 			return content
 				.replace(/from "\.\.\/\.\.\/types\.ts";/g, 'from "#kiyomi/ejs";')
-				.replace(/from "\.\.\/\.\.\/utils\.ts";/g, 'from "#kiyomi/ejs";');
+				.replace(/from "\.\.\/\.\.\/utils\.ts";/g, 'from "#kiyomi/ejs";')
+				.replace(
+					/result = \{ key: k1\.val \^ pool\[0\], isDirect: false \};/g,
+					"if (pool[0] !== undefined) {\n          result = { key: k1.val ^ pool[0], isDirect: false };\n          return;\n        }",
+				);
 		},
 	},
 	{

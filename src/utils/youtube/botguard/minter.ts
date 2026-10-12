@@ -55,7 +55,7 @@ export class Minter {
 
 		const callback = await getMinter(toUint8(integrityToken.integrity_token));
 
-		if (!(callback instanceof Function)) {
+		if (typeof callback !== "function") {
 			throw new Error("WebPO minter unavailable");
 		}
 

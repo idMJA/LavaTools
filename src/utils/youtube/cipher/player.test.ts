@@ -33,6 +33,20 @@ describe("PlayerScript", () => {
 		);
 	});
 
+	it("PlayerScript > parses TCL player URL", () => {
+		const script = PlayerScript.fromUrl(
+			`https://www.youtube.com/s/player/${TEST_PLAYER_ID}/player_ias_tcl.vflset/en_US/base.js`,
+		);
+		expect(script.variant).toBe(PlayerVariant.IAS_TCL);
+	});
+
+	it("PlayerScript > parses TV_TCL player URL", () => {
+		const script = PlayerScript.fromUrl(
+			`https://www.youtube.com/s/player/${TEST_PLAYER_ID}/tv-player-ias-tcl.vflset/tv-player-ias-tcl.js`,
+		);
+		expect(script.variant).toBe(PlayerVariant.TV_TCL);
+	});
+
 	it("parses PHONE variant", () => {
 		const script = PlayerScript.fromUrl(
 			`https://www.youtube.com/s/player/${TEST_PLAYER_ID}/player-plasma-ias-phone-en_US.vflset/base.js`,

@@ -5,7 +5,12 @@ Auto-synced by scripts/update-ejs.ts
 
 import { generate } from "astring";
 import { type ESTree, parse } from "meriyah";
-import { extract, generateArrowFunction, setupNodes } from "#kiyomi/ejs";
+import {
+	extract,
+	extractArray,
+	generateArrowFunction,
+	setupNodes,
+} from "#kiyomi/ejs";
 
 export function preprocessPlayer(data: string): string {
 	const program = parse(data);
@@ -94,8 +99,9 @@ export function getSolutions(
 		n: [] as ESTree.ArrowFunctionExpression[],
 		sig: [] as ESTree.ArrowFunctionExpression[],
 	};
+	const pool = extractArray(statements);
 	for (const statement of statements) {
-		const result = extract(statement);
+		const result = extract(statement, pool, statements);
 		if (result) {
 			found.n.push(
 				makeSolver(result, {

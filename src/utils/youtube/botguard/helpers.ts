@@ -10,12 +10,12 @@ export function toUint8(base64: string): Uint8Array {
 		REG_FOR_BASE64,
 		(match) => BASE64_MAP[match] || match,
 	);
-	return new Uint8Array(Buffer.from(base64Mod, "base64"));
+	return new Uint8Array([...atob(base64Mod)].map((char) => char.charCodeAt(0)));
 }
 
 export function toBase64(u8: Uint8Array, base64url = false): string {
-	const result = Buffer.from(u8).toString(base64url ? "base64url" : "base64");
-	return result;
+	const result = btoa(String.fromCharCode(...u8));
+	return base64url ? result.replace(/\+/g, "-").replace(/\//g, "_") : result;
 }
 
 export function buildURL(endpoint: string, use_api = true): string {

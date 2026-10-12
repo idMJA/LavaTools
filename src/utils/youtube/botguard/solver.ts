@@ -510,31 +510,13 @@ export async function getWebPo(useYouTubeAPI = true): Promise<Minter> {
 			new Function(interpreter)();
 		} else {
 			// Sandboxed node:vm execution with hardened isolation and timeout kill
-			const sandbox = Object.assign(Object.create(null), {
+			const sandbox = Object.assign(globalThis, {
 				window: dom.window,
 				document: dom.window.document,
 				location: dom.window.location,
 				origin: dom.window.origin,
 				navigator: dom.window.navigator,
 				yt: dom.window.yt,
-				console,
-				setTimeout,
-				clearTimeout,
-				setInterval,
-				clearInterval,
-				TextEncoder,
-				TextDecoder,
-				atob,
-				btoa,
-				Uint8Array,
-				Array,
-				Object,
-				String,
-				Number,
-				Math,
-				Date,
-				RegExp,
-				JSON,
 			});
 
 			const context = vm.createContext(sandbox);

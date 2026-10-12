@@ -35,7 +35,11 @@ export async function getSts(
 	if (match?.[2]) {
 		const sts = match[2];
 		stsCache.set(cacheKey, sts);
-		logs("info", `Extracted STS (${sts}) from player script: ${player_url}`);
+		const resolvedPlayer = getPlayerScript(player_url);
+		logs(
+			"info",
+			`Extracted STS (${sts}) from player script: ${player_url} [variant: ${resolvedPlayer.variant}]`,
+		);
 		return { sts, cacheHit: false };
 	} else {
 		throw new Error("Timestamp not found in player script");

@@ -5,15 +5,20 @@ export enum PlayerVariant {
 	IAS = "IAS",
 	IAS_TCC = "IAS_TCC",
 	IAS_TCE = "IAS_TCE",
+	IAS_TCL = "IAS_TCL",
 	ES5 = "ES5",
 	ES6 = "ES6",
 	ES6_TCC = "ES6_TCC",
 	ES6_TCE = "ES6_TCE",
+	ES6_TCL = "ES6_TCL",
 	TV = "TV",
 	TV_ES6 = "TV_ES6",
+	TV_TCL = "TV_TCL",
 	PHONE = "PHONE",
 	EMBED = "EMBED",
 	EMBED_ES6 = "EMBED_ES6",
+	EMBED_TCL = "EMBED_TCL",
+	EMBED_ES6_TCL = "EMBED_ES6_TCL",
 	HOUSE = "HOUSE",
 }
 
@@ -55,6 +60,11 @@ const playerVariantDetails: VariantDetail[] = [
 		(region) => `player_ias_tce.vflset/${region}/base.js`,
 	),
 	new VariantDetail(
+		PlayerVariant.IAS_TCL,
+		/^player_ias_tcl\.vflset\/([a-zA-Z_]+)\/base\.js$/,
+		(region) => `player_ias_tcl.vflset/${region}/base.js`,
+	),
+	new VariantDetail(
 		PlayerVariant.ES5,
 		/^player_es5\.vflset\/([a-zA-Z_]+)\/base\.js$/,
 		(region) => `player_es5.vflset/${region}/base.js`,
@@ -75,6 +85,11 @@ const playerVariantDetails: VariantDetail[] = [
 		(region) => `player_es6_tce.vflset/${region}/base.js`,
 	),
 	new VariantDetail(
+		PlayerVariant.ES6_TCL,
+		/^player_es6_tcl\.vflset\/([a-zA-Z_]+)\/base\.js$/,
+		(region) => `player_es6_tcl.vflset/${region}/base.js`,
+	),
+	new VariantDetail(
 		PlayerVariant.PHONE,
 		/^player-plasma-ias-phone-([a-zA-Z_]+)\.vflset\/base\.js$/,
 		(region) => `player-plasma-ias-phone-${region}.vflset/base.js`,
@@ -90,6 +105,11 @@ const playerVariantDetails: VariantDetail[] = [
 		() => "tv-player-es6.vflset/tv-player-es6.js",
 	),
 	new VariantDetail(
+		PlayerVariant.TV_TCL,
+		/^tv-player-ias-tcl\.vflset\/tv-player-ias-tcl\.js$/,
+		() => "tv-player-ias-tcl.vflset/tv-player-ias-tcl.js",
+	),
+	new VariantDetail(
 		PlayerVariant.EMBED,
 		/^player_embed\.vflset\/([a-zA-Z_]+)\/base\.js$/,
 		(region) => `player_ias.vflset/${region}/base.js`,
@@ -98,6 +118,16 @@ const playerVariantDetails: VariantDetail[] = [
 		PlayerVariant.EMBED_ES6,
 		/^player_embed_es6\.vflset\/([a-zA-Z_]+)\/base\.js$/,
 		(region) => `player_es6.vflset/${region}/base.js`,
+	),
+	new VariantDetail(
+		PlayerVariant.EMBED_TCL,
+		/^player_embed_tcl\.vflset\/([a-zA-Z_]+)\/base\.js$/,
+		(region) => `player_embed_tcl.vflset/${region}/base.js`,
+	),
+	new VariantDetail(
+		PlayerVariant.EMBED_ES6_TCL,
+		/^player_embed_es6_tcl\.vflset\/([a-zA-Z_]+)\/base\.js$/,
+		(region) => `player_embed_es6_tcl.vflset/${region}/base.js`,
 	),
 	new VariantDetail(
 		PlayerVariant.HOUSE,
