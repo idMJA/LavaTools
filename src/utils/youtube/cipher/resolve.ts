@@ -43,7 +43,7 @@ export async function resolveUrl(
 	const resolvedPlayer = getPlayerScript(player_url);
 	logs(
 		"info",
-		`Resolved YouTube stream URL via player: ${player_url} [variant: ${resolvedPlayer.variant}]`,
+		`Resolved YouTube stream URL via player: ${resolvedPlayer.toUrl()} [variant: ${resolvedPlayer.variant}]`,
 	);
 
 	const response: ResolveUrlResponse = {

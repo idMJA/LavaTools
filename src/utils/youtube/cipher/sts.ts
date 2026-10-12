@@ -38,7 +38,7 @@ export async function getSts(
 		const resolvedPlayer = getPlayerScript(player_url);
 		logs(
 			"info",
-			`Extracted STS (${sts}) from player script: ${player_url} [variant: ${resolvedPlayer.variant}]`,
+			`Extracted STS (${sts}) from player script: ${resolvedPlayer.toUrl()} [variant: ${resolvedPlayer.variant}]`,
 		);
 		return { sts, cacheHit: false };
 	} else {
