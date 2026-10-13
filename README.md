@@ -173,7 +173,6 @@ Once the server is running, access the interactive API documentation:
 
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| `POST` | `/api/youtube/decrypt_signature` | Decrypt YouTube signatures | ✅ |
 | `POST` | `/api/youtube/get_sts` | Extract signature timestamp | ✅ |
 | `POST` | `/api/youtube/resolve_url` | Resolve YouTube stream URL by decrypting signature and/or n parameter | ✅ |
 | `POST` | `/api/youtube/generate` | Generate BotGuard PO Token (`content_binding` & optional `coldToken`) | 🔑 (If configured) |
@@ -259,46 +258,41 @@ LavaTools includes an advanced Spotify and Deezer key rotation system that autom
 
 ### Setup
 
-1. Configure your Lavalink servers under `[[keyRotation.lavalinkServers]]` in `config.toml`:
+1. Configure your Lavalink nodes under `[[nodes]]` in `config.toml`:
 
-```typescript
-lavalinkServers: [
-  {
-    name: "Primary",
-    host: "lavalink-1.example.com",
-    port: 8080,
-    secure: true,
-    password: "PASSWORD1",
-  },
-  {
-    name: "Secondary",
-    host: "lavalink-2.example.com",
-    port: 8080,
-    secure: true,
-    password: "PASSWORD2",
-  },
-]
+```toml
+[[nodes]]
+name = "Primary"
+host = "lavalink-1.example.com"
+port = 8080
+secure = true
+password = "PASSWORD1"
+
+[[nodes]]
+name = "Secondary"
+host = "lavalink-2.example.com"
+port = 8080
+secure = true
+password = "PASSWORD2"
 ```
 
-2. Add your Spotify and Deezer credentials:
+2. Add your Spotify and Deezer credentials under `[rotation]`:
 
-```typescript
-keys: {
-  spotify: [
-    {
-      clientId: "client_id_1",
-      clientSecret: "client_secret_1",
-      spDc: "sp_dc_1",
-    },
-  ],
-  deezer: [
-    {
-      arl: "deezer_arl_cookie_1",
-      masterDecryptionKey: "master_decryption_key_1",
-      formats: ["FLAC", "MP3_320"],
-    },
-  ],
-}
+```toml
+[rotation]
+interval = 60
+maxErrors = 3
+auto = true
+
+[[rotation.keys.spotify]]
+clientId = "client_id_1"
+clientSecret = "client_secret_1"
+spDc = "sp_dc_1"
+
+[[rotation.keys.deezer]]
+arl = "deezer_arl_cookie_1"
+masterDecryptionKey = "master_decryption_key_1"
+formats = ["FLAC", "MP3_320"]
 ```
 
 3. The system will automatically:
@@ -357,9 +351,13 @@ curl -X POST http://localhost:3000/api/key-rotation/report-error \
 
 ```
 src/
-├── config/                # Application & Key Rotation configuration
-├── index.ts               # Application entry point
-├── server.ts              # Elysia server setup
+├── config/                # TOML configuration loader & validator
+├── index.ts               # Application entry point & graceful shutdown
+├── routes/                # Modular route controllers
+│   ├── key-rotation.ts    # Key rotation endpoints
+│   ├── spotify.ts         # Spotify token endpoints
+│   └── youtube.ts         # YouTube cipher & BotGuard endpoints
+├── server.ts              # Elysia server setup & Swagger docs
 ├── types/                 # TypeScript type definitions
 └── utils/                 # Utility functions
     ├── rotator.ts         # Key rotator (Spotify & Deezer)
@@ -368,17 +366,22 @@ src/
     │   ├── direct.ts      # API-based token fetching
     │   └── index.ts       # Spotify client factory
     └── youtube/           # YouTube-related utilities
-        ├── botguard/      # BotGuard PO Token solver (WebPO Generator)
+        ├── botguard/      # BotGuard PO Token solver & worker pool
+        │   ├── cold-start.ts
         │   ├── constants.ts
         │   ├── helpers.ts
+        │   ├── minter.ts
+        │   ├── pool.ts
         │   ├── solver.ts
-        │   └── visitor.ts
-        ├── cipher/        # YouTube signature & player deciphering
-        │   ├── decrypt.ts
-        │   ├── player.ts
-        │   ├── resolve.ts
-        │   └── solvers.ts
-        └── index.ts
+        │   ├── visitor.ts
+        │   └── worker.ts
+        └── cipher/        # YouTube signature & player deciphering
+            ├── decrypt.ts
+            ├── ejs/       # AST solver algorithms (yt-dlp/ejs)
+            ├── player.ts
+            ├── resolve.ts
+            ├── solvers.ts
+            └── sts.ts
 ```
 
 ## 🛠️ Development
@@ -393,7 +396,7 @@ bun run dev
 bun run format
 
 # Type checking
-bun run typecheck:app
+bun run typecheck
 
 # Run unit tests
 bun test
