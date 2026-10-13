@@ -173,6 +173,7 @@ Once the server is running, access the interactive API documentation:
 
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
+| `POST` | `/api/youtube/decrypt_signature` | Decrypt YouTube signatures & n-parameter (legacy compatible) | ✅ |
 | `POST` | `/api/youtube/get_sts` | Extract signature timestamp | ✅ |
 | `POST` | `/api/youtube/resolve_url` | Resolve YouTube stream URL by decrypting signature and/or n parameter | ✅ |
 | `POST` | `/api/youtube/generate` | Generate BotGuard PO Token (`content_binding` & optional `coldToken`) | 🔑 (If configured) |
@@ -211,6 +212,19 @@ Response:
   "poToken": "...",
   "contentBinding": "dQw4w9WgXcQ"
 }
+```
+
+#### Decrypt Signature (NodeLink / Legacy Clients)
+
+```bash
+curl -X POST http://localhost:3000/api/youtube/decrypt_signature \
+  -H "Content-Type: application/json" \
+  -H "Authorization: your_secret_token" \
+  -d '{
+    "player_url": "https://www.youtube.com/s/player/player_id/player.js",
+    "encrypted_signature": "ENCRYPTED_SIG",
+    "n_param": "ENCRYPTED_N"
+  }'
 ```
 
 #### Get STS
