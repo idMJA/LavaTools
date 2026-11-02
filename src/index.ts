@@ -4,7 +4,13 @@ import {
 	KeyRotationConfiguration,
 } from "#kiyomi/config";
 import type { SpotifyClient } from "#kiyomi/types";
-import { initRotator, initSpotify, logs, stopRotator } from "#kiyomi/utils";
+import {
+	initRotator,
+	initSpotify,
+	logs,
+	purgeStaleCaches,
+	stopRotator,
+} from "#kiyomi/utils";
 import { startServer } from "./server";
 
 let spotifyClient: SpotifyClient | null = null;
@@ -51,10 +57,23 @@ async function main() {
 
 	await startServer(spotifyClient);
 
+	const gcInterval = setInterval(
+		() => {
+			try {
+				purgeStaleCaches();
+				if (typeof Bun !== "undefined" && typeof Bun.gc === "function") {
+					Bun.gc(true);
+				}
+			} catch (_) {}
+		},
+		1000 * 60 * 30,
+	);
+
 	async function shutdown() {
 		logs("info", "Shutting down server...");
 
 		try {
+			clearInterval(gcInterval);
 			stopRotator();
 
 			if (spotifyClient?.cleanup) {

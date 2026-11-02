@@ -2,7 +2,9 @@ import { LRUCache } from "lru-cache";
 import type { SolverFunctions } from "#kiyomi/types";
 
 export const playerCache = new LRUCache<string, string>({
-	max: 300,
+	max: 15,
+	maxSize: 50 * 1024 * 1024,
+	sizeCalculation: (value) => value.length * 2,
 	ttl: 1000 * 60 * 60,
 	allowStale: false,
 	updateAgeOnGet: false,
@@ -10,7 +12,9 @@ export const playerCache = new LRUCache<string, string>({
 });
 
 export const preprocessedCache = new LRUCache<string, string>({
-	max: 300,
+	max: 15,
+	maxSize: 50 * 1024 * 1024,
+	sizeCalculation: (value) => value.length * 2,
 	ttl: 1000 * 60 * 60,
 	allowStale: false,
 	updateAgeOnGet: false,
@@ -18,7 +22,7 @@ export const preprocessedCache = new LRUCache<string, string>({
 });
 
 export const solverCache = new LRUCache<string, SolverFunctions>({
-	max: 150,
+	max: 50,
 	ttl: 1000 * 60 * 60 * 24,
 	allowStale: false,
 	updateAgeOnGet: true,
@@ -26,14 +30,14 @@ export const solverCache = new LRUCache<string, SolverFunctions>({
 });
 
 export const inFlightCache = new LRUCache<string, Promise<string>>({
-	max: 500,
+	max: 100,
 	ttl: 1000 * 60 * 5,
 	allowStale: false,
 	updateAgeOnGet: false,
 });
 
 export const stsCache = new LRUCache<string, string>({
-	max: 150,
+	max: 50,
 	ttl: 1000 * 60 * 60 * 24,
 	allowStale: false,
 	updateAgeOnGet: true,
@@ -75,4 +79,12 @@ export function clearAllCaches() {
 	solverCache.clear();
 	inFlightCache.clear();
 	stsCache.clear();
+}
+
+export function purgeStaleCaches() {
+	playerCache.purgeStale();
+	preprocessedCache.purgeStale();
+	solverCache.purgeStale();
+	inFlightCache.purgeStale();
+	stsCache.purgeStale();
 }

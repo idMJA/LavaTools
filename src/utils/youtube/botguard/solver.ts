@@ -59,7 +59,15 @@ function release_dom(dom: JSDOM | undefined) {
 		}
 	}
 
-	dom.window.close();
+	try {
+		dom.window.close();
+	} catch {}
+
+	if (typeof Bun !== "undefined" && typeof Bun.gc === "function") {
+		try {
+			Bun.gc(false);
+		} catch {}
+	}
 }
 
 function parseChallenge(raw_data: unknown): unknown {
