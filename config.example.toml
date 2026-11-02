@@ -19,8 +19,8 @@ toFile = false
 filePath = "./logs/app.log"
 
 [spotify]
-# Method to fetch anonymous token: "browser" (via Chrome) or "api"
-fetchMethod = "browser"
+# Method to fetch anonymous token: "api" (direct) or "browser"
+fetchMethod = "api"
 
 [youtube]
 # Authentication password for LavaTools API (leave empty to disable auth)

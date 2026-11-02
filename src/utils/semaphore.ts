@@ -1,23 +1,30 @@
 export class Semaphore {
-	private _locked = false;
-	private _waiters: Array<(release: () => void) => void> = [];
+	private _capacity: number;
+	private _active = 0;
+	private _waiters: Array<() => void> = [];
+
+	constructor(capacity = 1) {
+		this._capacity = capacity;
+	}
 
 	async acquire(): Promise<() => void> {
-		if (this._locked) {
-			return new Promise((resolve) => {
-				this._waiters.push(resolve);
-			});
+		if (this._active < this._capacity) {
+			this._active++;
+			return this._release.bind(this);
 		}
-		this._locked = true;
-		return this._release.bind(this);
+		return new Promise((resolve) => {
+			this._waiters.push(() => {
+				resolve(this._release.bind(this));
+			});
+		});
 	}
 
 	private _release() {
-		const waiter = this._waiters.shift();
-		if (waiter) {
-			waiter(this._release.bind(this));
+		const next = this._waiters.shift();
+		if (next) {
+			next();
 		} else {
-			this._locked = false;
+			this._active--;
 		}
 	}
 }

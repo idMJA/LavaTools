@@ -4,14 +4,50 @@ import type {
 	SpotifyClient,
 	SpotifyToken,
 } from "#kiyomi/types";
-import { generateTokenUrl, logs, SpotifyTokenHandler } from "#kiyomi/utils";
+import {
+	generateTokenUrl,
+	getArtistTopTracksMetadata,
+	logs,
+	resolveSpotifyUrl,
+	SpotifyTokenHandler,
+	searchSpotifyTracks,
+} from "#kiyomi/utils";
 
 class DirectSpotifyClient implements SpotifyClient {
+	private cachedToken: SpotifyToken | null = null;
+
+	private async getValidAccessToken(): Promise<string> {
+		const now = Date.now();
+		if (
+			this.cachedToken &&
+			this.cachedToken.accessTokenExpirationTimestampMs - 15000 > now
+		) {
+			return this.cachedToken.accessToken;
+		}
+
+		const token = (await generateTokenUrl(undefined, true)) as SpotifyToken;
+		if (!token?.accessToken) {
+			throw new Error("Failed to mint Spotify anonymous access token");
+		}
+
+		this.cachedToken = token;
+		return token.accessToken;
+	}
+
 	async handleTokenRequest(
-		_isForce = false,
+		isForce = false,
 		cookies?: Array<{ name: string; value: string }>,
 	): Promise<SpotifyToken | { error: string }> {
 		try {
+			if (
+				!isForce &&
+				!cookies?.length &&
+				this.cachedToken &&
+				this.cachedToken.accessTokenExpirationTimestampMs - 15000 > Date.now()
+			) {
+				return this.cachedToken;
+			}
+
 			const cookieHeader = cookies?.length
 				? cookies.map((c) => `${c.name}=${c.value}`).join("; ")
 				: undefined;
@@ -26,10 +62,44 @@ class DirectSpotifyClient implements SpotifyClient {
 				return { error: "Unexpected string response from API" };
 			}
 
+			if (!cookies?.length) {
+				this.cachedToken = result;
+			}
+
 			return result;
 		} catch (error) {
 			logs("error", "Direct API token fetch failed:", error);
 			return { error: `Direct API failed: ${(error as Error).message}` };
+		}
+	}
+
+	async resolveUrl(url: string) {
+		try {
+			const token = await this.getValidAccessToken();
+			return await resolveSpotifyUrl(url, token);
+		} catch (e) {
+			logs("error", `Failed to resolve Spotify URL ${url}:`, e);
+			return { error: (e as Error).message };
+		}
+	}
+
+	async searchCatalog(query: string, limit = 10) {
+		try {
+			const token = await this.getValidAccessToken();
+			return await searchSpotifyTracks(query, limit, token);
+		} catch (e) {
+			logs("error", `Failed to search Spotify catalog for ${query}:`, e);
+			return { error: (e as Error).message };
+		}
+	}
+
+	async getArtistTopTracks(artistId: string) {
+		try {
+			const token = await this.getValidAccessToken();
+			return await getArtistTopTracksMetadata(artistId, token);
+		} catch (e) {
+			logs("error", `Failed to fetch artist top tracks for ${artistId}:`, e);
+			return { error: (e as Error).message };
 		}
 	}
 }
