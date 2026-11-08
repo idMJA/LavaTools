@@ -133,8 +133,7 @@ the detailed reference is in [`CONFIG.md`](./CONFIG.md).
 1. **Configure Lavalink Nodes:** Add your server details under `[[nodes]]` in `config.toml`
 2. **Add Keys:** Add your Spotify credentials under `[[rotation.keys.spotify]]` and Deezer cookies under `[[rotation.keys.deezer]]`
 
-Keep `youtube.auth` empty during local development if authentication is not needed. When it is
-configured, use the same secret in Lavalink's `remotePot.pass` and in the `Authorization` header.
+Keep `youtube.auth` empty during local development if authentication is not needed. When it is configured, use the same secret in Lavalink's `remotePot.pass` and in the `Authorization` header.
 
 ### Running the Server
 
