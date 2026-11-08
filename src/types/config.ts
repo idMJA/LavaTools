@@ -82,7 +82,10 @@ interface YouTubeConfig {
 interface ServerConfig {
 	host: string;
 	port?: number;
+	browserPath?: string | null;
 }
+
+export type LogLevel = "error" | "warn" | "info" | "debug";
 
 export interface FeaturesConfig {
 	cipher?: boolean;
@@ -94,10 +97,8 @@ export interface FeaturesConfig {
 export interface KiyomiConfiguration {
 	server: ServerConfig;
 
-	browserPath?: string | null;
-
 	logging?: {
-		level: "error" | "warn" | "info" | "debug";
+		level: LogLevel;
 		toFile: boolean;
 		filePath?: string;
 	};

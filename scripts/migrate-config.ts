@@ -1,4 +1,4 @@
-import { existsSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const PROJECT_ROOT = join(import.meta.dir, "..");
@@ -6,9 +6,20 @@ const OLD_CONFIG_FILE = join(PROJECT_ROOT, "src/config/config.ts");
 const OLD_KEY_FILE = join(PROJECT_ROOT, "src/config/key.ts");
 const TARGET_TOML_FILE = join(PROJECT_ROOT, "config.toml");
 
-if (!existsSync(OLD_CONFIG_FILE) && !existsSync(OLD_KEY_FILE)) {
+const hasLegacyConfig =
+	existsSync(OLD_CONFIG_FILE) &&
+	!readFileSync(OLD_CONFIG_FILE, "utf8").includes("loadTomlConfig");
+const hasLegacyKeys = existsSync(OLD_KEY_FILE);
+
+if (!hasLegacyConfig && !hasLegacyKeys) {
 	console.log("No legacy src/config/config.ts or key.ts found to migrate.");
 	process.exit(0);
+}
+
+if (existsSync(TARGET_TOML_FILE) && !process.argv.includes("--force")) {
+	throw new Error(
+		`Refusing to overwrite existing ${TARGET_TOML_FILE}. Use --force to replace it.`,
+	);
 }
 
 console.log("Migrating legacy TypeScript configuration to config.toml...");
@@ -62,7 +73,7 @@ interface LegacyKeyConfig {
 let legacyConfig: LegacyConfig = {};
 let legacyKeys: LegacyKeyConfig = {};
 
-if (existsSync(OLD_CONFIG_FILE)) {
+if (hasLegacyConfig) {
 	try {
 		const mod = await import(OLD_CONFIG_FILE);
 		legacyConfig = mod.Configuration || {};
@@ -74,7 +85,7 @@ if (existsSync(OLD_CONFIG_FILE)) {
 	}
 }
 
-if (existsSync(OLD_KEY_FILE)) {
+if (hasLegacyKeys) {
 	try {
 		const mod = await import(OLD_KEY_FILE);
 		legacyKeys = mod.KeyRotationConfiguration || {};
@@ -175,6 +186,9 @@ for (const dz of legacyKeys.keys?.deezer || []) {
 		tomlLines.push(
 			`masterDecryptionKey = ${JSON.stringify(dz.masterDecryptionKey)}`,
 		);
+	if (dz.formats?.length) {
+		tomlLines.push(`formats = ${JSON.stringify(dz.formats)}`);
+	}
 	tomlLines.push("");
 }
 

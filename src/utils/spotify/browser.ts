@@ -7,8 +7,15 @@ import type {
 } from "playwright";
 import playwright from "playwright";
 import { Configuration } from "#kiyomi/config";
-import type { SpotifyToken } from "#kiyomi/types";
+import type {
+	SpotifyArtistTopTracksResult,
+	SpotifyResolveResult,
+	SpotifySearchResult,
+	SpotifyToken,
+} from "#kiyomi/types";
 import { logs, Semaphore } from "#kiyomi/utils";
+import { resolveSpotifyUrl } from "./resolver";
+import { getArtistTopTracksMetadata, searchSpotifyTracks } from "./search";
 
 export class SpotifyTokenHandler {
 	private semaphore = new Semaphore();
@@ -110,6 +117,47 @@ export class SpotifyTokenHandler {
 		}
 	}
 
+	public async resolveUrl(
+		url: string,
+	): Promise<SpotifyResolveResult | { error: string }> {
+		try {
+			const token = await this.getUsableAccessToken();
+			return await resolveSpotifyUrl(url, token);
+		} catch (error) {
+			logs("error", `Failed to resolve Spotify URL ${url}:`, error);
+			return { error: error instanceof Error ? error.message : String(error) };
+		}
+	}
+
+	public async searchCatalog(
+		query: string,
+		limit = 10,
+	): Promise<SpotifySearchResult | { error: string }> {
+		try {
+			const token = await this.getUsableAccessToken();
+			return await searchSpotifyTracks(query, limit, token);
+		} catch (error) {
+			logs("error", `Failed to search Spotify catalog for ${query}:`, error);
+			return { error: error instanceof Error ? error.message : String(error) };
+		}
+	}
+
+	public async getArtistTopTracks(
+		artistId: string,
+	): Promise<SpotifyArtistTopTracksResult | { error: string }> {
+		try {
+			const token = await this.getUsableAccessToken();
+			return await getArtistTopTracksMetadata(artistId, token);
+		} catch (error) {
+			logs(
+				"error",
+				`Failed to fetch artist top tracks for ${artistId}:`,
+				error,
+			);
+			return { error: error instanceof Error ? error.message : String(error) };
+		}
+	}
+
 	public async cleanup(): Promise<void> {
 		if (this.refreshTimeout) {
 			clearTimeout(this.refreshTimeout);
@@ -121,6 +169,14 @@ export class SpotifyTokenHandler {
 	private isValid(token?: SpotifyToken): boolean {
 		if (!token) return false;
 		return token.accessTokenExpirationTimestampMs - 10000 > Date.now();
+	}
+
+	private async getUsableAccessToken(): Promise<string> {
+		const result = await this.handleTokenRequest();
+		if (!("accessToken" in result)) {
+			throw new Error(result.error);
+		}
+		return result.accessToken;
 	}
 
 	private setRefreshTimer(): void {
@@ -163,8 +219,9 @@ export class SpotifyTokenHandler {
 			try {
 				logs("info", "Launching browser...");
 				const executablePath =
-					Configuration.browserPath && Configuration.browserPath.trim() !== ""
-						? Configuration.browserPath
+					Configuration.server.browserPath &&
+					Configuration.server.browserPath.trim() !== ""
+						? Configuration.server.browserPath
 						: undefined;
 				const launchOptions: LaunchOptions = {
 					headless: true,

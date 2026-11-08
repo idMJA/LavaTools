@@ -2,6 +2,18 @@ import { describe, expect, it } from "bun:test";
 import { Configuration } from "./config/config";
 import { createApp } from "./server";
 import { createSpotifyClient } from "./utils/spotify";
+import { SpotifyTokenHandler } from "./utils/spotify/browser";
+
+describe("Spotify browser client", () => {
+	it("exposes resolver methods as well as token handling", () => {
+		const client = SpotifyTokenHandler.prototype;
+
+		expect(typeof client.handleTokenRequest).toBe("function");
+		expect(typeof client.resolveUrl).toBe("function");
+		expect(typeof client.searchCatalog).toBe("function");
+		expect(typeof client.getArtistTopTracks).toBe("function");
+	});
+});
 
 describe("Spotify Direct API & Resolver Endpoints", () => {
 	it("resolves single track with ISRC using native fetch", async () => {

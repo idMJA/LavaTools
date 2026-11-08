@@ -49,13 +49,14 @@ bunx playwright install chromium
 1. **Download Chromium**
    - Download a compatible Chromium build from [https://commondatastorage.googleapis.com/chromium-browser-snapshots/index.html](https://commondatastorage.googleapis.com/chromium-browser-snapshots/index.html) (choose your OS/arch, e.g. Linux x64).
 2. **Extract the archive** and upload the `chrome`/`chromium` binary (and its folder) to your Pterodactyl server, e.g. `/home/container/chrome-linux/chrome`.
-3. **Set the path in `.env`**:
-   ```properties
-   CHROME_PATH=/home/container/chrome-linux/chrome
+3. **Set the path in `config.toml`**:
+   ```toml
+   [server]
+   browserPath = "/home/container/chrome-linux/chrome"
    ```
 4. **Restart your server/container**.
 
-If `CHROME_PATH` is not set, Playwright will use its default browser (if installed).
+If `server.browserPath` is empty or not set, Playwright will use its bundled Chromium (if installed).
 
 ## Build & Run
 
@@ -72,57 +73,24 @@ Copy `config.example.toml` to `config.toml` and update settings:
 cp config.example.toml config.toml
 ```
 
+On Windows PowerShell, use:
+
+```powershell
+Copy-Item config.example.toml config.toml
+```
+
 If you are updating from an older version with TypeScript configs (`src/config/config.ts`), you can automatically migrate:
 ```bash
 bun run migrate:config
 ```
 
-```toml
-[enabled]
-cipher = true
-botguard = true
-spotify = true
-rotation = true
-
-[server]
-host = "0.0.0.0"
-port = 3000
-browserPath = "/usr/bin/google-chrome-stable"
-
-[logging]
-level = "info"
-toFile = false
-filePath = "./logs/app.log"
-
-[spotify]
-fetchMethod = "api"
-
-[youtube]
-auth = "your_auth_token_here"
-overridePlayerVariant = "IAS"
-overridePlayerId = ""
-
-[youtube.botguard]
-mode = "auto"
-timeout = 5000
-workers = 1
-queueSize = 32
-
-[[nodes]]
-name = "Primary Lavalink"
-host = "localhost"
-port = 8080
-secure = false
-password = "PASSWORD"
-
-[rotation]
-interval = 60
-maxErrors = 3
-auto = true
-```
+The complete starter file is [`config.example.toml`](./config.example.toml);
+the detailed reference is in [`CONFIG.md`](./CONFIG.md).
 
 1. **Configure Lavalink Nodes:** Add your server details under `[[nodes]]` in `config.toml`
 2. **Add Keys:** Add your Spotify credentials under `[[rotation.keys.spotify]]` and Deezer cookies under `[[rotation.keys.deezer]]`
+
+Keep `youtube.auth` empty during local development if authentication is not needed. When it is configured, use the same secret in Lavalink's `remotePot.pass` and in the `Authorization` header.
 
 ### Running the Server
 
@@ -156,6 +124,10 @@ Once the server is running, access the interactive API documentation:
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
 | `GET` | `/api/spotify/token` | Get Spotify access token | ❌ |
+| `GET` | `/api/resolve` | Resolve a Spotify track, playlist, or album | ❌ |
+| `GET` | `/api/spotify/resolve` | Namespaced Spotify resolver | ❌ |
+| `GET` | `/api/search` | Search the Spotify catalog | ❌ |
+| `GET` | `/api/spotify/search` | Namespaced Spotify catalog search | ❌ |
 
 ### Spotify Key Rotation (Multiple Server Support)
 
@@ -167,7 +139,7 @@ Once the server is running, access the interactive API documentation:
 | `POST` | `/api/key-rotation/report-error` | Report error for current key | ✅ |
 
 **Query Parameters:**
-- `force` (optional): Force refresh token (`1`, `yes`, `true` to enable)
+- `force` (optional on `/api/spotify/token`): Force refresh token (`1`, `yes`, `true` to enable)
 
 ### YouTube
 
@@ -374,6 +346,11 @@ src/
 ├── server.ts              # Elysia server setup & Swagger docs
 ├── types/                 # TypeScript type definitions
 └── utils/                 # Utility functions
+    ├── api.ts             # Shared API helpers
+    ├── auth.ts            # Configurable request authentication
+    ├── cache.ts           # Cache management
+    ├── logger.ts          # Console and optional file logging
+    ├── semaphore.ts       # Concurrency control
     ├── rotator.ts         # Key rotator (Spotify & Deezer)
     ├── spotify/           # Spotify-related utilities
     │   ├── browser.ts     # Browser automation for tokens
@@ -391,6 +368,7 @@ src/
         │   └── worker.ts
         └── cipher/        # YouTube signature & player deciphering
             ├── decrypt.ts
+            ├── index.ts
             ├── ejs/       # AST solver algorithms (yt-dlp/ejs)
             ├── player.ts
             ├── resolve.ts

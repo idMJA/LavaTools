@@ -10,7 +10,7 @@ rotation = true
 host = "0.0.0.0"
 port = 3000
 # Path to local Chrome/Chromium binary (optional, used if spotify fetchMethod = "browser")
-browserPath = "/usr/bin/google-chrome-stable"
+browserPath = ""
 
 [logging]
 # Log level: "error" | "warn" | "info" | "debug"
@@ -24,7 +24,7 @@ fetchMethod = "api"
 
 [youtube]
 # Authentication password for LavaTools API (leave empty to disable auth)
-auth = "TsukasaAlyaMahiru"
+auth = ""
 # YouTube player variant override (recommended: "IAS" for general stability, or "TV_TCL" / "IAS_TCL" for TCL variants)
 # Options: "IAS" | "IAS_TCC" | "IAS_TCE" | "IAS_TCL" | "ES5" | "ES6" | "ES6_TCC" | "ES6_TCE" | "ES6_TCL" | "TV" | "TV_ES6" | "TV_TCL" | "PHONE" | "EMBED" | "EMBED_ES6" | "EMBED_TCL" | "EMBED_ES6_TCL" | "HOUSE"
 overridePlayerVariant = "IAS"

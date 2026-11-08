@@ -20,8 +20,8 @@ export function createApp(spotifyClient: SpotifyClient | null) {
 					},
 					servers: [
 						{
-							url: `http://localhost:${Configuration.server.port || 3000}`,
-							description: "Development server",
+							url: `http://${Configuration.server.host === "0.0.0.0" ? "localhost" : Configuration.server.host}:${Configuration.server.port || 3000}`,
+							description: "Configured server",
 						},
 					],
 					tags: [
@@ -56,7 +56,10 @@ export function createApp(spotifyClient: SpotifyClient | null) {
 		.use(createSpotifyRoutes(spotifyClient))
 		.use(keyRotationRoutes)
 		.use(youtubeRoutes)
-		.listen(Configuration.server.port || 3000);
+		.listen({
+			hostname: Configuration.server.host,
+			port: Configuration.server.port || 3000,
+		});
 }
 
 export async function startServer(spotifyClient: SpotifyClient | null) {

@@ -18,7 +18,8 @@
     "typecheck": "tsc --noEmit",
     "format": "biome check --write --unsafe ./src",
     "update:ejs": "bun run ./scripts/update-ejs.ts",
-    "migrate:config": "bun run ./scripts/migrate-config.ts"
+    "migrate:config": "bun run ./scripts/migrate-config.ts",
+    "prepare": "husky"
   },
   "lint-staged": {
     "*.ts": [

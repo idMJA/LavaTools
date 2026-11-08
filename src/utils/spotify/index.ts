@@ -152,7 +152,9 @@ export async function createSpotifyClient(
 	const method = config.spotify.fetchMethod;
 
 	if (method === "browser") {
-		const browserAvailable = await hasBrowser(config.browserPath || undefined);
+		const browserAvailable = await hasBrowser(
+			config.server.browserPath || undefined,
+		);
 
 		if (!browserAvailable) {
 			logs(
