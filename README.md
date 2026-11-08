@@ -49,13 +49,57 @@ bunx playwright install chromium
 1. **Download Chromium**
    - Download a compatible Chromium build from [https://commondatastorage.googleapis.com/chromium-browser-snapshots/index.html](https://commondatastorage.googleapis.com/chromium-browser-snapshots/index.html) (choose your OS/arch, e.g. Linux x64).
 2. **Extract the archive** and upload the `chrome`/`chromium` binary (and its folder) to your Pterodactyl server, e.g. `/home/container/chrome-linux/chrome`.
-3. **Set the path in `.env`**:
-   ```properties
-   CHROME_PATH=/home/container/chrome-linux/chrome
+3. **Set the path in `config.toml`**:
+   ```toml
+   [server]
+   browserPath = "/home/container/chrome-linux/chrome"
    ```
 4. **Restart your server/container**.
 
-If `CHROME_PATH` is not set, Playwright will use its default browser (if installed).
+If `server.browserPath` is empty or not set, Playwright will use its bundled Chromium (if installed).
+
+## Pterodactyl and Docker
+
+The repository includes the custom Pterodactyl files in [`for_pterodactyl/`](./for_pterodactyl/):
+
+- `Dockerfile/Dockerfile` provides Debian, Bun bootstrap support, Chromium libraries, FFmpeg and
+  the native audio dependencies required by Lavalink deployments.
+- `Dockerfile/entrypoint.sh` installs or updates Bun in the mounted container volume, then runs
+  the Pterodactyl `COMMAND` variable.
+- `egg-bun-oxyde-chromium-deps.json.json` is the importable Pterodactyl egg definition.
+
+### Using the egg
+
+1. Import the egg JSON in the Pterodactyl administrator panel.
+2. Select the image published by the egg, or build the included Dockerfile and publish it to
+   your registry.
+3. Set **Git Repo Address** to the repository URL and choose the branch.
+4. Set **Command** to `bun run src/index.ts`.
+5. Set **Auto Update** to `1` only if the container should run `git pull` on every start.
+6. Upload `config.toml` to the server. It is intentionally ignored by Git.
+7. Set `[server].browserPath` to the actual Chromium executable, for example:
+
+   ```toml
+   [server]
+   browserPath = "/home/container/chrome-linux/chrome"
+   ```
+
+The egg installs production dependencies during installation. The entrypoint also installs Bun
+at runtime because `/home/container` is a mounted Pterodactyl volume. Do not rely on a Bun binary
+copied into that directory by the image build.
+
+### Building the Docker image
+
+Run this from the `for_pterodactyl/Dockerfile` directory:
+
+```bash
+cd for_pterodactyl/Dockerfile
+docker build -t your-registry/lavatools-bun-chromium:latest .
+docker push your-registry/lavatools-bun-chromium:latest
+```
+
+The Dockerfile is an image layer for the egg, not a standalone application image: the startup
+command and repository checkout are controlled by Pterodactyl variables.
 
 ## Build & Run
 
@@ -72,57 +116,25 @@ Copy `config.example.toml` to `config.toml` and update settings:
 cp config.example.toml config.toml
 ```
 
+On Windows PowerShell, use:
+
+```powershell
+Copy-Item config.example.toml config.toml
+```
+
 If you are updating from an older version with TypeScript configs (`src/config/config.ts`), you can automatically migrate:
 ```bash
 bun run migrate:config
 ```
 
-```toml
-[enabled]
-cipher = true
-botguard = true
-spotify = true
-rotation = true
-
-[server]
-host = "0.0.0.0"
-port = 3000
-browserPath = "/usr/bin/google-chrome-stable"
-
-[logging]
-level = "info"
-toFile = false
-filePath = "./logs/app.log"
-
-[spotify]
-fetchMethod = "api"
-
-[youtube]
-auth = "your_auth_token_here"
-overridePlayerVariant = "IAS"
-overridePlayerId = ""
-
-[youtube.botguard]
-mode = "auto"
-timeout = 5000
-workers = 1
-queueSize = 32
-
-[[nodes]]
-name = "Primary Lavalink"
-host = "localhost"
-port = 8080
-secure = false
-password = "PASSWORD"
-
-[rotation]
-interval = 60
-maxErrors = 3
-auto = true
-```
+The complete starter file is [`config.example.toml`](./config.example.toml);
+the detailed reference is in [`CONFIG.md`](./CONFIG.md).
 
 1. **Configure Lavalink Nodes:** Add your server details under `[[nodes]]` in `config.toml`
 2. **Add Keys:** Add your Spotify credentials under `[[rotation.keys.spotify]]` and Deezer cookies under `[[rotation.keys.deezer]]`
+
+Keep `youtube.auth` empty during local development if authentication is not needed. When it is
+configured, use the same secret in Lavalink's `remotePot.pass` and in the `Authorization` header.
 
 ### Running the Server
 
@@ -156,6 +168,10 @@ Once the server is running, access the interactive API documentation:
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
 | `GET` | `/api/spotify/token` | Get Spotify access token | ❌ |
+| `GET` | `/api/resolve` | Resolve a Spotify track, playlist, or album | ❌ |
+| `GET` | `/api/spotify/resolve` | Namespaced Spotify resolver | ❌ |
+| `GET` | `/api/search` | Search the Spotify catalog | ❌ |
+| `GET` | `/api/spotify/search` | Namespaced Spotify catalog search | ❌ |
 
 ### Spotify Key Rotation (Multiple Server Support)
 
@@ -166,8 +182,8 @@ Once the server is running, access the interactive API documentation:
 | `POST` | `/api/key-rotation/set-active` | Set specific key as active (updates all servers) | ✅ |
 | `POST` | `/api/key-rotation/report-error` | Report error for current key | ✅ |
 
-**Query Parameters:**
-- `force` (optional): Force refresh token (`1`, `yes`, `true` to enable)
+**Spotify token query parameters:**
+- `force` (optional on `/api/spotify/token`): Force refresh token (`1`, `yes`, `true` to enable)
 
 ### YouTube
 
@@ -180,7 +196,9 @@ Once the server is running, access the interactive API documentation:
 | `POST` | `/api/youtube/decode_cold_start` | Decode cold start token to inspect timestamp and client state | 🔑 (If configured) |
 
 **Authentication:**
-YouTube endpoints enforce authentication if `youtube.auth` token is configured in your LavaTools configuration. Include the `Authorization` header with your token (or `pass` parameter in Lavalink `youtube.remotePot.pass`).
+YouTube endpoints and key-rotation write endpoints enforce authentication only when
+`youtube.auth` is non-empty. The key-rotation status endpoint is public. Include the
+`Authorization` header with the configured token.
 
 #### Lavalink Configuration Example
 
@@ -252,8 +270,8 @@ curl -X POST http://localhost:3000/api/youtube/resolve_url \
     "stream_url": "https://rX---sn-abcxyz.googlevideo.com/videoplayback?expire=...&s=ENCRYPTED_S&n=ENCRYPTED_N",
     "player_url": "https://www.youtube.com/s/player/player_id/player.js",
     "encrypted_signature": "ENCRYPTED_S",
-    "signature_key": "sig",    # optional, defaults to 'sig'
-    "n_param": "ENCRYPTED_N"   # optional; if not provided, the endpoint will look for `n` in stream_url
+    "signature_key": "sig",
+    "n_param": "ENCRYPTED_N"
   }'
 ```
 
@@ -374,6 +392,11 @@ src/
 ├── server.ts              # Elysia server setup & Swagger docs
 ├── types/                 # TypeScript type definitions
 └── utils/                 # Utility functions
+    ├── api.ts             # Shared API helpers
+    ├── auth.ts            # Configurable request authentication
+    ├── cache.ts           # Cache management
+    ├── logger.ts          # Console and optional file logging
+    ├── semaphore.ts       # Concurrency control
     ├── rotator.ts         # Key rotator (Spotify & Deezer)
     ├── spotify/           # Spotify-related utilities
     │   ├── browser.ts     # Browser automation for tokens
@@ -391,6 +414,7 @@ src/
         │   └── worker.ts
         └── cipher/        # YouTube signature & player deciphering
             ├── decrypt.ts
+            ├── index.ts
             ├── ejs/       # AST solver algorithms (yt-dlp/ejs)
             ├── player.ts
             ├── resolve.ts

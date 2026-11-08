@@ -1,7 +1,16 @@
+import { appendFileSync, mkdirSync } from "node:fs";
+import { dirname } from "node:path";
+import { Configuration } from "#kiyomi/config";
+
 export function logs(
 	level: "log" | "error" | "warn" | "info",
 	...args: unknown[]
 ) {
+	const configuredLevel = Configuration.logging?.level || "info";
+	const priorities = { log: 0, debug: 0, info: 1, warn: 2, error: 3 };
+	const normalizedLevel = level === "log" ? "debug" : level;
+	if (priorities[normalizedLevel] < priorities[configuredLevel]) return;
+
 	const timestamp = `[${new Date().toUTCString()}]`;
 	let coloredLevel: string;
 	const RESET = "\x1b[0m";
@@ -22,10 +31,20 @@ export function logs(
 		coloredLevel = `${GREEN}${BOLD}[LOG]${RESET}`;
 	}
 
-	(console[level] as (...args: unknown[]) => void)(
-		`${coloredLevel} ${GRAY}${timestamp}${RESET}`,
+	const message = `${coloredLevel} ${GRAY}${timestamp}${RESET}`;
+	(console[level === "log" ? "debug" : level] as (...args: unknown[]) => void)(
+		message,
 		...args,
 	);
+
+	if (Configuration.logging?.toFile) {
+		const filePath = Configuration.logging.filePath || "./logs/app.log";
+		mkdirSync(dirname(filePath), { recursive: true });
+		appendFileSync(
+			filePath,
+			`${new Date().toISOString()} [${normalizedLevel.toUpperCase()}] ${args.map(String).join(" ")}\n`,
+		);
+	}
 }
 
 export function logs_undefined(context: string, err: unknown): undefined {

@@ -7,6 +7,8 @@ Copy `config.example.toml` to get started:
 cp config.example.toml config.toml
 ```
 
+The server requires `config.toml` at runtime. It does not silently start from the example file.
+
 If updating from an older release using `src/config/config.ts`, migrate automatically:
 ```bash
 bun run migrate:config
@@ -75,7 +77,7 @@ Spotify token generator settings.
 | Key | Type | Default | Description |
 | :--- | :---: | :---: | :--- |
 | `enabled` | boolean | `true` | Service-level switch for Spotify endpoints; only used when `[enabled].spotify` is omitted. |
-| `fetchMethod` | string | `"browser"` | Method to fetch anonymous token: `"browser"` (headless Chrome) or `"api"` (direct API). |
+| `fetchMethod` | string | `"api"` | Method to fetch anonymous token: `"browser"` (headless Chrome) or `"api"` (direct API). |
 
 ---
 
@@ -85,7 +87,7 @@ YouTube cipher and authorization settings.
 
 | Key | Type | Default | Description |
 | :--- | :---: | :---: | :--- |
-| `auth` | string | `""` | Authorization password for endpoints (sent via `Authorization: <password>` header). |
+| `auth` | string | `""` | Authorization password for protected YouTube and key-rotation write endpoints. Empty disables authentication. |
 | `cipherEnabled` | boolean | `true` | Service-level switch for cipher endpoints; only used when `[enabled].cipher` is omitted. |
 | `botguardEnabled` | boolean | `true` | Service-level switch for BotGuard endpoints; only used when `[enabled].botguard` is omitted. |
 | `overridePlayerVariant` | string | `"IAS"` | Enforces a specific player variant. Options: `"IAS"`, `"IAS_TCC"`, `"IAS_TCE"`, `"IAS_TCL"`, `"ES5"`, `"ES6"`, `"ES6_TCC"`, `"ES6_TCE"`, `"ES6_TCL"`, `"TV"`, `"TV_ES6"`, `"TV_TCL"`, `"PHONE"`, `"EMBED"`, `"EMBED_ES6"`, `"EMBED_TCL"`, `"EMBED_ES6_TCL"`, `"HOUSE"`. |
@@ -186,3 +188,8 @@ formats = ["FLAC", "MP3_320"]
 ```
 
 > **Note:** `isActive`, `lastUsed`, and `errors` exist in the schema but are managed by the rotator at runtime. Do not set them in `config.toml`.
+
+## Migration
+
+`bun run migrate:config` only migrates an actual legacy TypeScript configuration. It refuses to
+overwrite an existing `config.toml` unless `--force` is provided. Deezer `formats` are preserved.

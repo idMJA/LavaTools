@@ -1,1 +1,1 @@
-bun lint-staged
+bunx lint-staged
