@@ -23,7 +23,7 @@
   },
   "lint-staged": {
     "*.ts": [
-      "bunx biome check"
+      "bun format"
     ]
   },
   "dependencies": {
@@ -42,7 +42,9 @@
     "@types/bun": "latest",
     "@types/jsdom": "^30.0.0",
     "husky": "^9.1.7",
-    "lint-staged": "^17.3.0",
-    "typescript": "^5.9.3"
+    "lint-staged": "^17.3.0"
+  },
+  "peerDependencies": {
+    "typescript": "^7.0.2"
   }
 }

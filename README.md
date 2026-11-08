@@ -58,49 +58,6 @@ bunx playwright install chromium
 
 If `server.browserPath` is empty or not set, Playwright will use its bundled Chromium (if installed).
 
-## Pterodactyl and Docker
-
-The repository includes the custom Pterodactyl files in [`for_pterodactyl/`](./for_pterodactyl/):
-
-- `Dockerfile/Dockerfile` provides Debian, Bun bootstrap support, Chromium libraries, FFmpeg and
-  the native audio dependencies required by Lavalink deployments.
-- `Dockerfile/entrypoint.sh` installs or updates Bun in the mounted container volume, then runs
-  the Pterodactyl `COMMAND` variable.
-- `egg-bun-oxyde-chromium-deps.json.json` is the importable Pterodactyl egg definition.
-
-### Using the egg
-
-1. Import the egg JSON in the Pterodactyl administrator panel.
-2. Select the image published by the egg, or build the included Dockerfile and publish it to
-   your registry.
-3. Set **Git Repo Address** to the repository URL and choose the branch.
-4. Set **Command** to `bun run src/index.ts`.
-5. Set **Auto Update** to `1` only if the container should run `git pull` on every start.
-6. Upload `config.toml` to the server. It is intentionally ignored by Git.
-7. Set `[server].browserPath` to the actual Chromium executable, for example:
-
-   ```toml
-   [server]
-   browserPath = "/home/container/chrome-linux/chrome"
-   ```
-
-The egg installs production dependencies during installation. The entrypoint also installs Bun
-at runtime because `/home/container` is a mounted Pterodactyl volume. Do not rely on a Bun binary
-copied into that directory by the image build.
-
-### Building the Docker image
-
-Run this from the `for_pterodactyl/Dockerfile` directory:
-
-```bash
-cd for_pterodactyl/Dockerfile
-docker build -t your-registry/lavatools-bun-chromium:latest .
-docker push your-registry/lavatools-bun-chromium:latest
-```
-
-The Dockerfile is an image layer for the egg, not a standalone application image: the startup
-command and repository checkout are controlled by Pterodactyl variables.
-
 ## Build & Run
 
 ```bash
@@ -195,9 +152,7 @@ Once the server is running, access the interactive API documentation:
 | `POST` | `/api/youtube/decode_cold_start` | Decode cold start token to inspect timestamp and client state | 🔑 (If configured) |
 
 **Authentication:**
-YouTube endpoints and key-rotation write endpoints enforce authentication only when
-`youtube.auth` is non-empty. The key-rotation status endpoint is public. Include the
-`Authorization` header with the configured token.
+YouTube endpoints enforce authentication if `youtube.auth` token is configured in your LavaTools configuration. Include the `Authorization` header with your token (or `pass` parameter in Lavalink `youtube.remotePot.pass`).
 
 #### Lavalink Configuration Example
 
@@ -269,8 +224,8 @@ curl -X POST http://localhost:3000/api/youtube/resolve_url \
     "stream_url": "https://rX---sn-abcxyz.googlevideo.com/videoplayback?expire=...&s=ENCRYPTED_S&n=ENCRYPTED_N",
     "player_url": "https://www.youtube.com/s/player/player_id/player.js",
     "encrypted_signature": "ENCRYPTED_S",
-    "signature_key": "sig",
-    "n_param": "ENCRYPTED_N"
+    "signature_key": "sig",    # optional, defaults to 'sig'
+    "n_param": "ENCRYPTED_N"   # optional; if not provided, the endpoint will look for `n` in stream_url
   }'
 ```
 
