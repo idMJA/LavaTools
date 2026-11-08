@@ -182,7 +182,7 @@ Once the server is running, access the interactive API documentation:
 | `POST` | `/api/key-rotation/set-active` | Set specific key as active (updates all servers) | ✅ |
 | `POST` | `/api/key-rotation/report-error` | Report error for current key | ✅ |
 
-**Spotify token query parameters:**
+**Query Parameters:**
 - `force` (optional on `/api/spotify/token`): Force refresh token (`1`, `yes`, `true` to enable)
 
 ### YouTube
