@@ -237,6 +237,7 @@ export class SpotifyTokenHandler {
 						"--disable-backgrounding-occluded-windows",
 						"--disable-renderer-backgrounding",
 						"--window-size=1920,1080",
+						"--disable-background-networking",
 					],
 				};
 				if (executablePath) {
@@ -260,7 +261,10 @@ export class SpotifyTokenHandler {
 				logs("info", "Creating new page...");
 				this.page = await this.context.newPage();
 				logs("info", "Navigating to Spotify...");
-				void this.page.goto("https://open.spotify.com/");
+				void this.page.goto("https://open.spotify.com/", {
+                         waitUntil: "domcontentloaded",
+                         timeout: 60000,
+                          });
 				this.routesInitialized = false;
 				logs("info", "Persistent page created and navigated to Spotify");
 			} catch (err) {
