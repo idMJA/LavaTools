@@ -420,7 +420,10 @@ export class SpotifyTokenHandler {
 		});
 
 		try {
-			await page.goto("https://open.spotify.com/");
+			await page.goto("https://open.spotify.com/", {
+                         waitUntil: "domcontentloaded",
+                         timeout: 60000,
+            });
 			return await tokenPromise;
 		} catch (err) {
 			logs("error", `Navigation failed: ${err}`);
