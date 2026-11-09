@@ -170,10 +170,12 @@ export class PlayerScript {
 			}
 		}
 
-		logs(
+		if(Configuration.logging?.level === "debug"){
+             logs(
 			"warn",
 			`Unknown player variant for URL: ${url}. Defaulting to IAS variant.`,
-		);
+		     );
+            }
 		return new PlayerScript(id, PlayerVariant.IAS, null);
 	}
 
