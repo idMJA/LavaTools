@@ -297,7 +297,10 @@ export class SpotifyTokenHandler {
 			}
 			if (!this.page || this.page.isClosed()) {
 				this.page = await this.context.newPage();
-				void this.page.goto("https://open.spotify.com/");
+				void this.page.goto("https://open.spotify.com/", {
+                         waitUntil: "domcontentloaded",
+                         timeout: 60000,
+                          });
 				this.routesInitialized = false;
 			}
 		}
