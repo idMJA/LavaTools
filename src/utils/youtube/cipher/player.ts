@@ -170,7 +170,7 @@ export class PlayerScript {
 			}
 		}
 
-		if(Configuration.logging?.level === "debug"){
+		if(Configuration.logging?.level === "warn"){
              logs(
 			"warn",
 			`Unknown player variant for URL: ${url}. Defaulting to IAS variant.`,
