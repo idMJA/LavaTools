@@ -207,6 +207,12 @@ export class SpotifyTokenHandler {
 	): Promise<SpotifyToken> {
 		const token = await this.fetchToken(cookies);
 		this.accessToken = token;
+		if(Configuration.logging?.level === "debug"){
+			logs("log", "Spotify token fetched successfully:", {
+				accessToken: `${token.accessToken.slice(0, 20)}...`,
+				expiration: new Date(token.accessTokenExpirationTimestampMs).toISOString(),
+			});
+		}
 		this.setRefreshTimer();
 		return token;
 	}
