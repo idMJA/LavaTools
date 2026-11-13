@@ -21,6 +21,7 @@ export class SpotifyTokenHandler {
 	private semaphore = new Semaphore();
 	private accessToken: SpotifyToken | undefined;
 	private refreshTimeout: NodeJS.Timeout | undefined;
+	private refreshFailures = 0;
 
 	private browser: Browser | undefined;
 	private context: BrowserContext | undefined;
@@ -67,9 +68,10 @@ export class SpotifyTokenHandler {
 	): Promise<SpotifyToken | { error: string }> {
 		const started = Date.now();
 		if (cookies?.length) {
+			// Never write cookie values to logs: they are authentication credentials.
 			logs(
 				"info",
-				`Request with cookies: ${cookies.map((c) => `${c.name}=${c.value}`).join(", ")}`,
+				`Request with cookies: ${cookies.map((cookie) => cookie.name).join(", ")}`,
 			);
 		} else {
 			logs("info", "Request without cookies");
@@ -180,26 +182,45 @@ export class SpotifyTokenHandler {
 	}
 
 	private setRefreshTimer(): void {
-		if (this.refreshTimeout) clearTimeout(this.refreshTimeout);
+		if (this.refreshTimeout) {
+			clearTimeout(this.refreshTimeout);
+			this.refreshTimeout = undefined;
+		}
 		if (!this.accessToken) return;
+
 		const delay = Math.max(
 			this.accessToken.accessTokenExpirationTimestampMs - Date.now() + 100,
-			0,
+			1000,
 		);
-		this.refreshTimeout = setTimeout(async () => {
-			try {
+
+		const scheduleRefresh = (nextDelay: number): void => {
+			this.refreshTimeout = setTimeout(async () => {
 				const release = await this.semaphore.acquire();
 				try {
 					this.accessToken = await this.fetchToken();
-					logs("info", "Spotify token auto-refreshed (timeout)");
+					this.refreshFailures = 0;
+					logs("info", "Spotify token auto-refreshed successfully");
+				} catch (err) {
+					this.refreshFailures++;
+					const retryDelay = Math.min(
+						5000 * 2 ** (this.refreshFailures - 1),
+						60000,
+					);
+					logs(
+						"warn",
+						`Failed to auto-refresh Spotify token (attempt ${this.refreshFailures}). Retrying in ${retryDelay / 1000}s`,
+						err,
+					);
+					scheduleRefresh(retryDelay);
+					return;
 				} finally {
 					release();
 				}
-			} catch (err) {
-				logs("warn", "Failed to auto-refresh Spotify token", err);
-			}
-			this.setRefreshTimer();
-		}, delay);
+				this.setRefreshTimer();
+			}, nextDelay);
+		};
+
+		scheduleRefresh(delay);
 	}
 
 	private async getAccessToken(
@@ -207,7 +228,7 @@ export class SpotifyTokenHandler {
 	): Promise<SpotifyToken> {
 		const token = await this.fetchToken(cookies);
 		this.accessToken = token;
-		if(Configuration.logging?.level === "debug"){
+        if(Configuration.logging?.level === "debug"){
 			logs("log", "Spotify token fetched successfully:", {
 				accessToken: `${token.accessToken.slice(0, 20)}...`,
 				expiration: new Date(token.accessTokenExpirationTimestampMs).toISOString(),
@@ -243,7 +264,7 @@ export class SpotifyTokenHandler {
 						"--disable-backgrounding-occluded-windows",
 						"--disable-renderer-backgrounding",
 						"--window-size=1920,1080",
-						"--disable-background-networking",
+                        "--disable-background-networking",
 					],
 				};
 				if (executablePath) {
@@ -266,13 +287,8 @@ export class SpotifyTokenHandler {
 
 				logs("info", "Creating new page...");
 				this.page = await this.context.newPage();
-				logs("info", "Navigating to Spotify...");
-				void this.page.goto("https://open.spotify.com/", {
-                         waitUntil: "domcontentloaded",
-                         timeout: 60000,
-                          });
 				this.routesInitialized = false;
-				logs("info", "Persistent page created and navigated to Spotify");
+				logs("info", "Persistent page created successfully");
 			} catch (err) {
 				this.browser = undefined;
 				this.context = undefined;
@@ -303,10 +319,6 @@ export class SpotifyTokenHandler {
 			}
 			if (!this.page || this.page.isClosed()) {
 				this.page = await this.context.newPage();
-				void this.page.goto("https://open.spotify.com/", {
-                         waitUntil: "domcontentloaded",
-                         timeout: 60000,
-                          });
 				this.routesInitialized = false;
 			}
 		}
@@ -332,7 +344,7 @@ export class SpotifyTokenHandler {
 	private async initRoutesOnce(page: Page): Promise<void> {
 		if (this.routesInitialized) return;
 		this.routesInitialized = true;
-		await page.route("**/*", (route) => {
+		await page.route("**/*", async (route) => {
 			const url = route.request().url();
 			const type = route.request().resourceType();
 
@@ -354,8 +366,11 @@ export class SpotifyTokenHandler {
 			const isBlockedUrl = (u: string) =>
 				blockedPatterns.some((pat) => u.includes(pat));
 
-			if (blockedTypes.has(type) || isBlockedUrl(url)) return route.abort();
-			route.continue();
+			if (blockedTypes.has(type) || isBlockedUrl(url)) {
+				await route.abort();
+				return;
+			}
+			await route.continue();
 		});
 	}
 
@@ -367,9 +382,9 @@ export class SpotifyTokenHandler {
 
 		await context.clearCookies();
 		if (cookies?.length) {
-			const cookieObjects = cookies.map((c) => ({
-				name: c.name,
-				value: c.value,
+			const cookieObjects = cookies.map((cookie) => ({
+				name: cookie.name,
+				value: cookie.value,
 				domain: ".spotify.com",
 				path: "/",
 				httpOnly: false,
@@ -380,60 +395,84 @@ export class SpotifyTokenHandler {
 			logs(
 				"info",
 				"Cookies set for request",
-				cookieObjects.map((c) => ({
-					name: c.name,
-					value: `${c.value.slice(0, 20)}...`,
-				})),
+				cookieObjects.map((cookie) => cookie.name),
 			);
 		}
 
-		let timer: NodeJS.Timeout | undefined;
-		const tokenPromise = new Promise<SpotifyToken>((resolve, reject) => {
-			const onResponse = async (response: Response) => {
-				if (!response.url().includes("/api/token")) return;
+		return new Promise<SpotifyToken>((resolve, reject) => {
+			let settled = false;
+			let timer: NodeJS.Timeout;
+
+			const cleanup = (): void => {
+				clearTimeout(timer);
 				page.off("response", onResponse);
-				if (timer) clearTimeout(timer);
+			};
+
+			const fail = (error: Error): void => {
+				if (settled) return;
+				settled = true;
+				cleanup();
+				reject(error);
+			};
+
+			const onResponse = async (response: Response): Promise<void> => {
+				if (!response.url().includes("/api/token") || settled) return;
+
 				try {
-					if (!response.ok())
-						return reject(new Error("Invalid response from Spotify"));
+					if (!response.ok()) {
+						throw new Error(
+							`Spotify token endpoint returned HTTP ${response.status()}`,
+						);
+					}
+
+					// Read the response body immediately, before another navigation can invalidate it.
 					const body = await response.text();
-					let json: unknown;
-					try {
-						json = JSON.parse(body);
-					} catch {
-						logs("error", "Failed to parse response JSON");
-						return reject(new Error("Failed to parse response JSON"));
-					}
+					const json: unknown = JSON.parse(body);
+
 					if (
-						json &&
-						typeof json === "object" &&
-						json !== null &&
-						"_notes" in json
+						!json ||
+						typeof json !== "object" ||
+						!("accessToken" in json) ||
+						!("accessTokenExpirationTimestampMs" in json)
 					) {
-						delete (json as Record<string, unknown>)._notes;
+						throw new Error("Invalid Spotify token response");
 					}
+
+					const tokenData = json as Record<string, unknown>;
+					delete tokenData._notes;
+
+					if (settled) return;
+					settled = true;
+					cleanup();
 					resolve(json as SpotifyToken);
-				} catch (err) {
-					logs("error", `Failed to process token response: ${err}`);
-					reject(new Error(`Failed to process token response: ${err}`));
+				} catch (error) {
+					logs("error", "Failed to process Spotify token response", error);
+					fail(
+						error instanceof Error
+							? error
+							: new Error(String(error)),
+					);
 				}
 			};
+
+			// Register the listener before starting the only navigation for this fetch.
 			page.on("response", onResponse);
 			timer = setTimeout(() => {
-				page.off("response", onResponse);
-				reject(new Error("Token fetch exceeded deadline"));
+				fail(new Error("Token fetch exceeded deadline"));
 			}, 15000);
-		});
 
-		try {
-			await page.goto("https://open.spotify.com/", {
-                         waitUntil: "domcontentloaded",
-                         timeout: 60000,
-            });
-			return await tokenPromise;
-		} catch (err) {
-			logs("error", `Navigation failed: ${err}`);
-			throw err;
-		}
+			void page
+				.goto("https://open.spotify.com/", {
+					waitUntil: "domcontentloaded",
+					timeout: 60000,
+				})
+				.catch((error: unknown) => {
+					fail(
+						new Error(
+							`Spotify navigation failed: ${error instanceof Error ? error.message : String(error)}`,
+						),
+					);
+				});
+		});
 	}
 }
