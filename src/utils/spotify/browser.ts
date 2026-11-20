@@ -188,11 +188,12 @@ export class SpotifyTokenHandler {
 		}
 		if (!this.accessToken) return;
 
-		const delay = Math.max(
-			this.accessToken.accessTokenExpirationTimestampMs - Date.now() + 100,
-			1000,
-		);
+        const REFRESH_BEFORE_EXPIRATION = 120_000;
 
+        const delay = Math.max(
+         this.accessToken.accessTokenExpirationTimestampMs -
+            Date.now() - REFRESH_BEFORE_EXPIRATION, 1000
+        );
 		const scheduleRefresh = (nextDelay: number): void => {
 			this.refreshTimeout = setTimeout(async () => {
 				const release = await this.semaphore.acquire();
